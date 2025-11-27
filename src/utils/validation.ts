@@ -375,8 +375,7 @@ export function validateStatementOfPayment(data: Partial<StatementOfPayment>): V
  * @example
  * const result = validateBooking({
  *   bookingNumber: 'BK-2025-001',
- *   guestName: 'Travel Group A',
- *   tripName: 'Japan Winter Tour',
+ *   guestName: 'Japan Winter Tour - Travel Group A',
  *   startDate: '2025-12-01',
  *   endDate: '2025-12-10',
  *   pax: 10,
@@ -392,9 +391,6 @@ export function validateBooking(data: Partial<Booking>): ValidationResult {
   }
   if (!data.guestName || !isNonEmptyString(data.guestName)) {
     errors.push(createError('guestName', 'Guest name is required'))
-  }
-  if (!data.tripName || !isNonEmptyString(data.tripName)) {
-    errors.push(createError('tripName', 'Trip name is required'))
   }
 
   // Date fields

@@ -101,9 +101,8 @@ export default function BookingsScreen() {
     return bookings.filter((booking) => {
       const matchesSearch =
         searchQuery === '' ||
-        booking.tripName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        booking.bookingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        booking.guestName.toLowerCase().includes(searchQuery.toLowerCase())
+        booking.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        booking.bookingNumber.toLowerCase().includes(searchQuery.toLowerCase())
 
       return matchesSearch
     })
@@ -254,19 +253,14 @@ export default function BookingsScreen() {
                   </View>
                 </XStack>
 
-                {/* Trip name */}
+                {/* Guest name */}
                 <Text
                   fontSize={16}
                   fontWeight="600"
                   color={theme.textPrimary}
-                  marginBottom={4}
+                  marginBottom={14}
                   numberOfLines={1}
                 >
-                  {booking.tripName}
-                </Text>
-
-                {/* Guest name */}
-                <Text fontSize={13} color={theme.textSecondary} marginBottom={14}>
                   {booking.guestName}
                 </Text>
 

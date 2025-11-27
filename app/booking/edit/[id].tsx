@@ -277,7 +277,6 @@ export default function BookingEditScreen() {
   const [expandedCategory, setExpandedCategory] = useState<CostCategory | null>(null)
 
   // Form state
-  const [tripName, setTripName] = useState('')
   const [guestName, setGuestName] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -340,7 +339,6 @@ export default function BookingEditScreen() {
       if (data) {
         setBooking(data)
         // Populate form
-        setTripName(data.tripName || '')
         setGuestName(data.guestName || '')
         setStartDate(data.startDate || '')
         setEndDate(data.endDate || '')
@@ -433,10 +431,6 @@ export default function BookingEditScreen() {
     if (!booking) return
 
     // Validation
-    if (!tripName.trim()) {
-      Alert.alert('Validation Error', 'Trip name is required')
-      return
-    }
     if (!guestName.trim()) {
       Alert.alert('Validation Error', 'Guest name is required')
       return
@@ -447,7 +441,6 @@ export default function BookingEditScreen() {
 
     try {
       const updates: Partial<Booking> = {
-        tripName: tripName.trim(),
         guestName: guestName.trim(),
         startDate,
         endDate: endDate || startDate,
@@ -506,7 +499,6 @@ export default function BookingEditScreen() {
               status: updatedBooking.status,
             },
             {
-              tripName: updatedBooking.tripName,
               startDate: updatedBooking.startDate,
               endDate: updatedBooking.endDate,
               pax: updatedBooking.pax,
@@ -745,19 +737,11 @@ export default function BookingEditScreen() {
           <Card marginBottom="$4">
             <SectionHeader title="Trip Details" theme={theme} />
 
-            <FormField label="Trip Name" icon={Plane} required theme={theme}>
-              <Input
-                value={tripName}
-                onChangeText={setTripName}
-                placeholder="e.g., Kuala Lumpur City Experience"
-              />
-            </FormField>
-
             <FormField label="Guest / Customer Name" icon={User} required theme={theme}>
               <Input
                 value={guestName}
                 onChangeText={setGuestName}
-                placeholder="e.g., ABC Travel Agency"
+                placeholder="e.g., Hilmi Salleh"
               />
             </FormField>
 

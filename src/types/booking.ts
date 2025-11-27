@@ -50,12 +50,12 @@ export interface BookingCostCategory {
 
 /**
  * Complete booking form
+ * Matches web app structure - uses guestName as primary identifier
  */
 export interface Booking {
   id: string
   bookingNumber: string
-  guestName: string
-  tripName: string
+  guestName: string // Customer/guest name (also serves as trip identifier)
   startDate: string
   endDate: string
   pax: number // Number of participants

@@ -197,7 +197,6 @@ export async function createBooking(
     const bookingInsert = {
       company_id: companyId,
       booking_code: bookingCode,
-      trip_name: booking.tripName || booking.guestName, // Trip name (with fallback to guest name)
       guest_name: booking.guestName,
       trip_start_date: booking.startDate,
       trip_end_date: booking.endDate || booking.startDate,
@@ -306,7 +305,6 @@ export async function updateBooking(
     // Build update object with CORRECT column names
     const updateData: Record<string, any> = {}
 
-    if (updates.tripName !== undefined) updateData.trip_name = updates.tripName
     if (updates.guestName !== undefined) updateData.guest_name = updates.guestName
     if (updates.startDate !== undefined) updateData.trip_start_date = updates.startDate
     if (updates.endDate !== undefined) updateData.trip_end_date = updates.endDate
@@ -765,7 +763,6 @@ function dbBookingToBooking(dbBooking: any): Booking {
     id: dbBooking.id,
     bookingNumber: dbBooking.booking_code || '',
     guestName: dbBooking.guest_name || '',
-    tripName: dbBooking.trip_name || dbBooking.guest_name || '', // Use trip_name column, fallback to guest_name
     startDate: dbBooking.trip_start_date || '',
     endDate: dbBooking.trip_end_date || '',
     pax,

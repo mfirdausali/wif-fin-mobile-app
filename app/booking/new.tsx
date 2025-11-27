@@ -271,7 +271,6 @@ export default function NewBookingScreen() {
   const [expandedCategory, setExpandedCategory] = useState<CostCategory | null>(null)
 
   // Form state
-  const [tripName, setTripName] = useState('')
   const [guestName, setGuestName] = useState('')
   const [startDate, setStartDate] = useState(getTodayISO())
   const [endDate, setEndDate] = useState('')
@@ -382,10 +381,6 @@ export default function NewBookingScreen() {
 
   const handleSave = async () => {
     // Validation
-    if (!tripName.trim()) {
-      Alert.alert('Validation Error', 'Trip name is required')
-      return
-    }
     if (!guestName.trim()) {
       Alert.alert('Validation Error', 'Guest name is required')
       return
@@ -400,7 +395,6 @@ export default function NewBookingScreen() {
 
     try {
       const bookingPayload: Omit<Booking, 'id' | 'bookingNumber' | 'createdAt' | 'updatedAt'> = {
-        tripName: tripName.trim(),
         guestName: guestName.trim(),
         startDate,
         endDate: endDate || startDate,
@@ -440,7 +434,6 @@ export default function NewBookingScreen() {
             status: createdBooking.status,
           },
           {
-            tripName: createdBooking.tripName,
             startDate: createdBooking.startDate,
             endDate: createdBooking.endDate,
             pax: createdBooking.pax,
@@ -613,19 +606,11 @@ export default function NewBookingScreen() {
           <Card marginBottom="$4">
             <SectionHeader title="Trip Details" theme={theme} />
 
-            <FormField label="Trip Name" icon={Plane} required theme={theme}>
-              <Input
-                value={tripName}
-                onChangeText={setTripName}
-                placeholder="e.g., Kuala Lumpur City Experience"
-              />
-            </FormField>
-
             <FormField label="Guest / Customer Name" icon={User} required theme={theme}>
               <Input
                 value={guestName}
                 onChangeText={setGuestName}
-                placeholder="e.g., ABC Travel Agency"
+                placeholder="e.g., Hilmi Salleh"
               />
             </FormField>
 
