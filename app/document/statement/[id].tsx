@@ -141,9 +141,9 @@ export default function StatementOfPaymentDetailScreen() {
   const handleEdit = useCallback(() => {
     if (!statement || !currentUser) return
 
-    const canEdit = canEditDocument(statement, currentUser)
-    if (!canEdit.allowed) {
-      Alert.alert('Cannot Edit', getEditRestrictionMessage(canEdit.reason))
+    if (!canEditDocument(currentUser, statement)) {
+      const message = getEditRestrictionMessage(currentUser, statement)
+      Alert.alert('Cannot Edit', message || 'You cannot edit this document')
       return
     }
 
@@ -163,7 +163,7 @@ export default function StatementOfPaymentDetailScreen() {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
       setSharing(true)
-      await sharePDF(statement, 'statement_of_payment')
+      await sharePDF(statement)
     } catch (error) {
       console.error('Error sharing statement of payment:', error)
       Alert.alert('Error', 'Failed to share statement of payment')
@@ -838,7 +838,7 @@ export default function StatementOfPaymentDetailScreen() {
         }}
       >
         <XStack gap={12}>
-          {currentUser && canEditDocument(statement, currentUser).allowed && (
+          {currentUser && statement && canEditDocument(currentUser, statement) && (
             <Pressable
               onPress={handleEdit}
               style={{

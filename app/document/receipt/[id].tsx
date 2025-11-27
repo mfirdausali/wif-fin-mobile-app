@@ -82,9 +82,9 @@ export default function ReceiptDetailPage() {
   const handleEdit = useCallback(() => {
     if (!receipt || !user) return
 
-    const canEdit = canEditDocument(user, receipt)
-    if (!canEdit.allowed) {
-      Alert.alert('Cannot Edit', getEditRestrictionMessage(canEdit.reason, receipt))
+    if (!canEditDocument(user, receipt)) {
+      const message = getEditRestrictionMessage(user, receipt)
+      Alert.alert('Cannot Edit', message || 'You cannot edit this document')
       return
     }
 
@@ -95,8 +95,7 @@ export default function ReceiptDetailPage() {
   const handleSharePDF = useCallback(async () => {
     if (!receipt || !user) return
 
-    const canShare = canPrintDocuments(user)
-    if (!canShare.allowed) {
+    if (!canPrintDocuments(user)) {
       Alert.alert(
         'Permission Required',
         'You do not have permission to share documents. Please contact your administrator.'
@@ -190,8 +189,8 @@ export default function ReceiptDetailPage() {
   }
 
   const statusConfig = getStatusConfig(receipt.status)
-  const canEdit = user ? canEditDocument(user, receipt).allowed : false
-  const canShare = user ? canPrintDocuments(user).allowed : false
+  const canEdit = user ? canEditDocument(user, receipt) : false
+  const canShare = user ? canPrintDocuments(user) : false
 
   return (
     <View style={styles.container}>

@@ -165,9 +165,9 @@ export default function PaymentVoucherDetailScreen() {
   const handleEdit = useCallback(() => {
     if (!voucher || !currentUser) return
 
-    const canEdit = canEditDocument(voucher, currentUser)
-    if (!canEdit.allowed) {
-      Alert.alert('Cannot Edit', getEditRestrictionMessage(canEdit.reason))
+    if (!canEditDocument(currentUser, voucher)) {
+      const message = getEditRestrictionMessage(currentUser, voucher)
+      Alert.alert('Cannot Edit', message || 'You cannot edit this document')
       return
     }
 
@@ -187,7 +187,7 @@ export default function PaymentVoucherDetailScreen() {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
       setSharing(true)
-      await sharePDF(voucher, 'payment_voucher')
+      await sharePDF(voucher)
     } catch (error) {
       console.error('Error sharing payment voucher:', error)
       Alert.alert('Error', 'Failed to share payment voucher')
@@ -799,7 +799,7 @@ export default function PaymentVoucherDetailScreen() {
         }}
       >
         <XStack gap={12}>
-          {currentUser && canEditDocument(voucher, currentUser).allowed && (
+          {currentUser && voucher && canEditDocument(currentUser, voucher) && (
             <Pressable
               onPress={handleEdit}
               style={{

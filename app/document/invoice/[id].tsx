@@ -97,7 +97,7 @@ export default function InvoiceDetailScreen() {
 
     if (!canEditDocument(user, invoice)) {
       const message = getEditRestrictionMessage(user, invoice)
-      Alert.alert('Cannot Edit', message)
+      Alert.alert('Cannot Edit', message || 'You cannot edit this document')
       return
     }
 
@@ -116,7 +116,7 @@ export default function InvoiceDetailScreen() {
     try {
       setSharingPDF(true)
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-      await sharePDF(invoice.id, 'invoice')
+      await sharePDF(invoice)
     } catch (error) {
       console.error('Error sharing PDF:', error)
       Alert.alert('Error', 'Failed to share PDF')
