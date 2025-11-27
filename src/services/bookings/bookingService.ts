@@ -197,13 +197,14 @@ export async function createBooking(
     const bookingInsert = {
       company_id: companyId,
       booking_code: bookingCode,
+      trip_name: booking.tripName || booking.guestName, // Trip name (with fallback to guest name)
       guest_name: booking.guestName,
       trip_start_date: booking.startDate,
       trip_end_date: booking.endDate || booking.startDate,
       number_of_pax: booking.pax?.toString() || '',
       country: 'Japan',
       status: booking.status,
-      exchange_rate: booking.exchangeRate || 0.026,
+      exchange_rate: booking.exchangeRate || 0.0385, // JPY to MYR (¥100 = RM3.85)
 
       // Cost items stored as JSONB (correct column names!)
       transportation_items: booking.transportation || [],
@@ -305,6 +306,7 @@ export async function updateBooking(
     // Build update object with CORRECT column names
     const updateData: Record<string, any> = {}
 
+    if (updates.tripName !== undefined) updateData.trip_name = updates.tripName
     if (updates.guestName !== undefined) updateData.guest_name = updates.guestName
     if (updates.startDate !== undefined) updateData.trip_start_date = updates.startDate
     if (updates.endDate !== undefined) updateData.trip_end_date = updates.endDate
@@ -733,7 +735,7 @@ function dbBookingToBooking(dbBooking: any): Booking {
   const flightItems = dbBooking.flight_items || []
   const accommodationItems = dbBooking.accommodation_items || []
 
-  // Calculate totals from items (more reliable than stored totals)
+  // Calculate totals from items as fallback
   const allItems = [
     ...transportationItems,
     ...mealsItems,
@@ -743,13 +745,18 @@ function dbBookingToBooking(dbBooking: any): Booking {
     ...accommodationItems,
   ]
 
-  const totalInternalCostJPY = allItems.reduce((sum: number, item: any) =>
+  const calculatedInternalJPY = allItems.reduce((sum: number, item: any) =>
     sum + (item.internalTotal || 0), 0)
-  const totalB2BCostJPY = allItems.reduce((sum: number, item: any) =>
+  const calculatedB2BJPY = allItems.reduce((sum: number, item: any) =>
     sum + (item.b2bTotal || 0), 0)
+
+  // Use stored totals if available, otherwise use calculated values
+  // Database stores: grand_total_jpy (internal), grand_total_b2b_jpy (b2b)
+  const totalInternalCostJPY = Number(dbBooking.grand_total_jpy) || calculatedInternalJPY
+  const totalB2BCostJPY = Number(dbBooking.grand_total_b2b_jpy) || calculatedB2BJPY
   const totalProfitJPY = totalB2BCostJPY - totalInternalCostJPY
 
-  const exchangeRate = Number(dbBooking.exchange_rate) || 0.026
+  const exchangeRate = Number(dbBooking.exchange_rate) || 0.0385 // JPY to MYR
   const profitMargin = totalB2BCostJPY > 0
     ? (totalProfitJPY / totalB2BCostJPY) * 100
     : 0
@@ -758,7 +765,7 @@ function dbBookingToBooking(dbBooking: any): Booking {
     id: dbBooking.id,
     bookingNumber: dbBooking.booking_code || '',
     guestName: dbBooking.guest_name || '',
-    tripName: dbBooking.guest_name || '', // Web app uses guest_name as trip identifier
+    tripName: dbBooking.trip_name || dbBooking.guest_name || '', // Use trip_name column, fallback to guest_name
     startDate: dbBooking.trip_start_date || '',
     endDate: dbBooking.trip_end_date || '',
     pax,

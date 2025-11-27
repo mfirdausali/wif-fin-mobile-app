@@ -22,16 +22,19 @@ export type CostCategory =
 
 /**
  * A line item in a booking cost category
+ * Matches web app's BookingLineItem type
  */
 export interface BookingCostItem {
   id: string
+  date?: string // Optional date for this line item
   description: string
   quantity: number
-  internalPrice: number // WIF cost
-  b2bPrice: number // Price to B2B partner
+  internalPrice: number // WIF cost per unit (JPY)
+  b2bPrice: number // Price charged to B2B partner per unit (JPY)
   internalTotal: number // quantity * internalPrice
   b2bTotal: number // quantity * b2bPrice
   profit: number // b2bTotal - internalTotal
+  notes?: string // Optional notes for this line item
 }
 
 /**
