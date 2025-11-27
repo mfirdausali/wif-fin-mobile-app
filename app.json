@@ -1,30 +1,75 @@
 {
   "expo": {
-    "name": "wif-finance",
+    "name": "WIF Finance",
     "slug": "wif-finance",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "scheme": "wiffinance",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1a2b4a"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wiffinance.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "WIF Finance needs camera access to scan receipts and documents.",
+        "NSPhotoLibraryUsageDescription": "WIF Finance needs photo library access to attach images to documents.",
+        "NSFaceIDUsageDescription": "WIF Finance uses Face ID to securely access your financial documents.",
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1a2b4a"
       },
+      "package": "com.wiffinance.app",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "WIF Finance uses Face ID to securely access your account."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "supabaseUrl": "https://fthkayaprkicvzgqeipq.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0aGtheWFwcmtpY3Z6Z3FlaXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzAyNDAsImV4cCI6MjA3OTIwNjI0MH0.HnSAIGtZm705R0RDR0I53Ohss0BwhtXyNy0s9-E9imA",
+      "pdfServiceUrl": "https://pdf.wifjapan.com",
+      "eas": {
+        "projectId": "c8aa9b05-b492-41a0-8774-ba80657bb248"
+      }
+    },
+    "owner": "mfirdaus2001"
   }
 }
