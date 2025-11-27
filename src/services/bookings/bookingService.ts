@@ -18,6 +18,20 @@ import type {
   BookingCostItem,
   Currency,
 } from '../../types'
+import { logBookingEvent } from '../activity/activityLogService'
+import type { ActivityUser, ActivityBookingInfo } from '../../types/activity'
+
+/**
+ * Helper to create ActivityBookingInfo from Booking
+ */
+function toActivityBookingInfo(booking: Partial<Booking> & { id: string; bookingNumber?: string; guestName?: string; status?: BookingStatus }): ActivityBookingInfo {
+  return {
+    id: booking.id,
+    bookingNumber: booking.bookingNumber || 'N/A',
+    guestName: booking.guestName || 'Unknown',
+    status: booking.status || 'draft',
+  }
+}
 
 // Default company ID (single-tenant mode)
 const DEFAULT_COMPANY_ID = 'c0000000-0000-0000-0000-000000000001'
@@ -122,10 +136,14 @@ export async function getBooking(bookingId: string): Promise<Booking | null> {
 
 /**
  * Create a new booking
+ * @param booking - Booking data to create
+ * @param companyId - Company ID
+ * @param user - Optional user for activity logging
  */
 export async function createBooking(
   booking: Omit<Booking, 'id' | 'bookingNumber' | 'createdAt' | 'updatedAt'>,
-  companyId: string = DEFAULT_COMPANY_ID
+  companyId: string = DEFAULT_COMPANY_ID,
+  user?: ActivityUser
 ): Promise<Booking> {
   try {
     // Generate booking number
@@ -193,7 +211,18 @@ export async function createBooking(
 
     if (error) throw error
 
-    return dbBookingToBooking(data)
+    const createdBooking = dbBookingToBooking(data)
+
+    // Log activity if user is provided
+    if (user) {
+      logBookingEvent('booking:created', user, toActivityBookingInfo(createdBooking), {
+        totalJPY: createdBooking.totalB2BCostJPY,
+        totalMYR: createdBooking.totalB2BCostMYR,
+        pax: createdBooking.pax,
+      })
+    }
+
+    return createdBooking
   } catch (error) {
     console.error('Error creating booking:', error)
     throw new Error(`Failed to create booking: ${error}`)
@@ -202,10 +231,14 @@ export async function createBooking(
 
 /**
  * Update a booking
+ * @param bookingId - Booking ID to update
+ * @param updates - Partial booking updates
+ * @param user - Optional user for activity logging
  */
 export async function updateBooking(
   bookingId: string,
-  updates: Partial<Booking>
+  updates: Partial<Booking>,
+  user?: ActivityUser
 ): Promise<Booking | null> {
   try {
     // Build update object with CORRECT column names
@@ -280,7 +313,16 @@ export async function updateBooking(
 
     if (error) throw error
 
-    return dbBookingToBooking(data)
+    const updatedBooking = dbBookingToBooking(data)
+
+    // Log activity if user is provided
+    if (user) {
+      logBookingEvent('booking:updated', user, toActivityBookingInfo(updatedBooking), {
+        updatedFields: Object.keys(updates),
+      })
+    }
+
+    return updatedBooking
   } catch (error) {
     console.error('Error updating booking:', error)
     throw new Error(`Failed to update booking: ${error}`)
@@ -289,18 +331,45 @@ export async function updateBooking(
 
 /**
  * Update booking status
+ * @param bookingId - Booking ID
+ * @param status - New status
+ * @param user - Optional user for activity logging
  */
 export async function updateBookingStatus(
   bookingId: string,
-  status: BookingStatus
+  status: BookingStatus,
+  user?: ActivityUser
 ): Promise<boolean> {
   try {
+    // Get current booking info for logging
+    const { data: bookingInfo } = await supabase
+      .from('bookings')
+      .select('booking_code, guest_name, status')
+      .eq('id', bookingId)
+      .single()
+
+    const previousStatus = bookingInfo?.status
+
     const { error } = await supabase
       .from('bookings')
       .update({ status })
       .eq('id', bookingId)
 
     if (error) throw error
+
+    // Log activity if user is provided
+    if (user && bookingInfo) {
+      logBookingEvent('booking:status_changed', user, {
+        id: bookingId,
+        bookingNumber: bookingInfo.booking_code,
+        guestName: bookingInfo.guest_name,
+        status,
+      }, {
+        previousStatus,
+        newStatus: status,
+      })
+    }
+
     return true
   } catch (error) {
     console.error('Error updating booking status:', error)
@@ -310,15 +379,35 @@ export async function updateBookingStatus(
 
 /**
  * Delete a booking (soft delete)
+ * @param bookingId - Booking ID to delete
+ * @param user - Optional user for activity logging
  */
-export async function deleteBooking(bookingId: string): Promise<boolean> {
+export async function deleteBooking(bookingId: string, user?: ActivityUser): Promise<boolean> {
   try {
+    // Get booking info for logging before deletion
+    const { data: bookingInfo } = await supabase
+      .from('bookings')
+      .select('booking_code, guest_name, status')
+      .eq('id', bookingId)
+      .single()
+
     const { error } = await supabase
       .from('bookings')
       .update({ is_active: false })
       .eq('id', bookingId)
 
     if (error) throw error
+
+    // Log activity if user is provided
+    if (user && bookingInfo) {
+      logBookingEvent('booking:deleted', user, {
+        id: bookingId,
+        bookingNumber: bookingInfo.booking_code,
+        guestName: bookingInfo.guest_name,
+        status: bookingInfo.status,
+      })
+    }
+
     return true
   } catch (error) {
     console.error('Error deleting booking:', error)

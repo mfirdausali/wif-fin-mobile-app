@@ -10,6 +10,8 @@ import * as Sharing from 'expo-sharing'
 import Constants from 'expo-constants'
 import type { Document } from '../../types'
 import { getCompanyInfo, type CompanyInfo } from '../company/companyService'
+import { logDocumentEvent } from '../activity/activityLogService'
+import type { ActivityUser } from '../../types/activity'
 
 // Get PDF service URL from config (same as web app)
 const PDF_SERVICE_URL = Constants.expoConfig?.extra?.pdfServiceUrl || 'https://pdf.wifjapan.com'
@@ -166,11 +168,16 @@ async function fetchWithRetry(
  * - 30 second timeout per request
  * - 3 retries with exponential backoff (1s, 2s, 4s)
  * - Automatic retry on 5xx server errors and network failures
+ * @param documentData - Document to generate PDF for
+ * @param companyInfo - Optional company info (fetched from Supabase if not provided)
+ * @param printerInfo - Optional printer info
+ * @param user - Optional user for activity logging
  */
 export async function generatePDF(
   documentData: Document,
   companyInfo?: CompanyInfo,
-  printerInfo?: PrinterInfo
+  printerInfo?: PrinterInfo,
+  user?: ActivityUser
 ): Promise<string> {
   const endpoint = getEndpointForDocumentType(documentData.documentType)
   const dataKey = getDataKeyForDocumentType(documentData.documentType)
@@ -231,6 +238,21 @@ export async function generatePDF(
     const bytes = base64ToBytes(base64Data)
     file.write(bytes)
 
+    // Log activity if user is provided
+    if (user) {
+      logDocumentEvent('document:printed', user, {
+        id: documentData.id,
+        documentNumber: documentData.documentNumber,
+        documentType: documentData.documentType,
+        status: documentData.status,
+      }, {
+        printedBy: printerInfo?.userName,
+        printDate: printerInfo?.printDate || new Date().toISOString(),
+        fileName,
+      })
+    }
+
+    console.log('[PDF] PDF generated successfully:', fileName)
     return file.uri
   } catch (error) {
     console.error('PDF generation error:', error)
@@ -240,11 +262,16 @@ export async function generatePDF(
 
 /**
  * Generate PDF and open native share dialog
+ * @param documentData - Document to generate PDF for
+ * @param companyInfo - Optional company info
+ * @param printerInfo - Optional printer info
+ * @param user - Optional user for activity logging
  */
 export async function sharePDF(
   documentData: Document,
   companyInfo?: CompanyInfo,
-  printerInfo?: PrinterInfo
+  printerInfo?: PrinterInfo,
+  user?: ActivityUser
 ): Promise<void> {
   // Check if sharing is available
   const isAvailable = await Sharing.isAvailableAsync()
@@ -252,8 +279,8 @@ export async function sharePDF(
     throw new Error('Sharing is not available on this device')
   }
 
-  // Generate the PDF
-  const filePath = await generatePDF(documentData, companyInfo, printerInfo)
+  // Generate the PDF (with activity logging)
+  const filePath = await generatePDF(documentData, companyInfo, printerInfo, user)
 
   // Open share dialog
   await Sharing.shareAsync(filePath, {

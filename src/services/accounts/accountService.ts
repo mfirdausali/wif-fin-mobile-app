@@ -12,6 +12,20 @@
 
 import { supabase } from '../api/supabaseClient'
 import { Account, Transaction, AccountType, Currency, Country } from '../../types'
+import { logAccountEvent, logTransactionEvent } from '../activity/activityLogService'
+import type { ActivityUser, ActivityAccountInfo } from '../../types/activity'
+
+/**
+ * Helper to create ActivityAccountInfo from Account
+ */
+function toActivityAccountInfo(account: Partial<Account> & { id: string; name: string }): ActivityAccountInfo {
+  return {
+    id: account.id,
+    name: account.name,
+    type: account.type || 'main_bank',
+    currency: account.currency || 'MYR',
+  }
+}
 
 // Default company ID (single-tenant mode)
 const DEFAULT_COMPANY_ID = 'c0000000-0000-0000-0000-000000000001'
@@ -84,10 +98,14 @@ export async function getAccount(accountId: string): Promise<Account | null> {
 
 /**
  * Create a new account
+ * @param account - Account data to create
+ * @param companyId - Company ID
+ * @param user - Optional user for activity logging
  */
 export async function createAccount(
   account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>,
-  companyId: string = DEFAULT_COMPANY_ID
+  companyId: string = DEFAULT_COMPANY_ID,
+  user?: ActivityUser
 ): Promise<Account> {
   try {
     const insert = {
@@ -112,7 +130,18 @@ export async function createAccount(
       .single()
 
     if (error) throw error
-    return dbAccountToAccount(data!)
+
+    const createdAccount = dbAccountToAccount(data!)
+
+    // Log activity if user is provided
+    if (user) {
+      logAccountEvent('account:created', user, toActivityAccountInfo(createdAccount), {
+        initialBalance: createdAccount.initialBalance,
+        bankName: createdAccount.bankName,
+      })
+    }
+
+    return createdAccount
   } catch (error) {
     console.error('Error creating account:', error)
     throw new Error(`Failed to create account: ${error}`)
@@ -121,10 +150,14 @@ export async function createAccount(
 
 /**
  * Update an account
+ * @param accountId - Account ID to update
+ * @param updates - Partial account updates
+ * @param user - Optional user for activity logging
  */
 export async function updateAccount(
   accountId: string,
-  updates: Partial<Account>
+  updates: Partial<Account>,
+  user?: ActivityUser
 ): Promise<Account | null> {
   try {
     const { data, error } = await supabase
@@ -141,7 +174,17 @@ export async function updateAccount(
       .single()
 
     if (error) throw error
-    return dbAccountToAccount(data!)
+
+    const updatedAccount = dbAccountToAccount(data!)
+
+    // Log activity if user is provided
+    if (user) {
+      logAccountEvent('account:updated', user, toActivityAccountInfo(updatedAccount), {
+        updatedFields: Object.keys(updates),
+      })
+    }
+
+    return updatedAccount
   } catch (error) {
     console.error('Error updating account:', error)
     throw new Error(`Failed to update account: ${error}`)
@@ -150,15 +193,35 @@ export async function updateAccount(
 
 /**
  * Soft delete an account
+ * @param accountId - Account ID to delete
+ * @param user - Optional user for activity logging
  */
-export async function deleteAccount(accountId: string): Promise<boolean> {
+export async function deleteAccount(accountId: string, user?: ActivityUser): Promise<boolean> {
   try {
+    // Get account info for logging before deletion
+    const { data: accountInfo } = await supabase
+      .from('accounts')
+      .select('name, type, currency')
+      .eq('id', accountId)
+      .single()
+
     const { error } = await supabase
       .from('accounts')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', accountId)
 
     if (error) throw error
+
+    // Log activity if user is provided
+    if (user && accountInfo) {
+      logAccountEvent('account:deleted', user, {
+        id: accountId,
+        name: accountInfo.name,
+        type: accountInfo.type,
+        currency: accountInfo.currency,
+      })
+    }
+
     return true
   } catch (error) {
     console.error('Error deleting account:', error)
@@ -169,13 +232,20 @@ export async function deleteAccount(accountId: string): Promise<boolean> {
 /**
  * Update account balance
  * Called when receipts (increase) or statements of payment (decrease) are completed
+ * @param accountId - Account ID
+ * @param amount - Amount to add/subtract
+ * @param type - 'increase' or 'decrease'
+ * @param documentId - Optional linked document ID
+ * @param description - Optional description
+ * @param user - Optional user for activity logging
  */
 export async function updateAccountBalance(
   accountId: string,
   amount: number,
   type: 'increase' | 'decrease',
   documentId?: string,
-  description?: string
+  description?: string,
+  user?: ActivityUser
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
   try {
     // Get current account
@@ -217,16 +287,54 @@ export async function updateAccountBalance(
     if (updateError) throw updateError
 
     // Create transaction record
+    // Note: DB column is 'transaction_type', not 'type'
     await supabase.from('transactions').insert({
       account_id: accountId,
       document_id: documentId || null,
-      type,
+      transaction_type: type,  // Correct column name per DB schema
       amount,
       balance_before: currentBalance,
       balance_after: newBalance,
       description: description || `${type === 'increase' ? 'Deposit' : 'Withdrawal'}`,
       transaction_date: new Date().toISOString(),
     })
+
+    // Log activity if user is provided
+    if (user) {
+      // Get account name for logging
+      const { data: accountData } = await supabase
+        .from('accounts')
+        .select('name, currency')
+        .eq('id', accountId)
+        .single()
+
+      if (accountData) {
+        // Log balance change
+        logAccountEvent('account:balance_changed', user, {
+          id: accountId,
+          name: accountData.name,
+          type: 'main_bank',
+          currency: accountData.currency,
+        }, {
+          balanceBefore: currentBalance,
+          balanceAfter: newBalance,
+          changeAmount: amount,
+          changeType: type,
+        })
+
+        // Log transaction
+        logTransactionEvent('transaction:applied', user, {
+          accountId,
+          accountName: accountData.name,
+          amount,
+          documentId,
+          transactionType: type,
+          currency: accountData.currency,
+          balanceBefore: currentBalance,
+          balanceAfter: newBalance,
+        })
+      }
+    }
 
     return { success: true, newBalance }
   } catch (error) {
@@ -369,7 +477,7 @@ function dbTransactionToTransaction(dbTransaction: any): Transaction {
     id: dbTransaction.id,
     accountId: dbTransaction.account_id,
     documentId: dbTransaction.document_id || undefined,
-    type: dbTransaction.type as 'increase' | 'decrease',
+    type: dbTransaction.transaction_type as 'increase' | 'decrease',  // DB column is 'transaction_type'
     amount: dbTransaction.amount,
     balanceBefore: dbTransaction.balance_before,
     balanceAfter: dbTransaction.balance_after,

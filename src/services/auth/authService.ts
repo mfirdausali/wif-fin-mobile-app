@@ -11,6 +11,7 @@
 import CryptoJS from 'crypto-js'
 import { supabase } from '../api/supabaseClient'
 import * as SecureStore from 'expo-secure-store'
+import { logAuthEvent } from '../activity/activityLogService'
 
 // Types matching web app
 export type UserRole = 'viewer' | 'accountant' | 'manager' | 'admin'
@@ -170,6 +171,12 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
       // Update failed login attempts
       await updateFailedLoginAttempts(dbUser.id, dbUser.failed_login_attempts + 1)
 
+      // Log failed login attempt
+      logAuthEvent('auth:login_failed', { username: usernameOrEmail }, {
+        reason: 'invalid_password',
+        attemptCount: dbUser.failed_login_attempts + 1,
+      })
+
       return {
         success: false,
         error: 'Invalid username or password',
@@ -184,6 +191,16 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
 
     // Store user session
     await storeSession(user)
+
+    // Log successful login
+    logAuthEvent('auth:login', {
+      id: user.id,
+      username: user.username,
+      name: user.fullName,
+    }, {
+      role: user.role,
+      companyId: user.companyId,
+    })
 
     return {
       success: true,
@@ -201,11 +218,31 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
 
 /**
  * Logout - clear session
+ * @param user - Optional user info for logging (get from stored session before clearing)
  */
-export async function logout(): Promise<void> {
+export async function logout(user?: { id: string; username: string; name: string }): Promise<void> {
   try {
+    // Get user info for logging if not provided
+    let logUser = user
+    if (!logUser) {
+      const storedUser = await getStoredSession()
+      if (storedUser) {
+        logUser = {
+          id: storedUser.id,
+          username: storedUser.username,
+          name: storedUser.fullName,
+        }
+      }
+    }
+
+    // Clear session
     await SecureStore.deleteItemAsync(STORAGE_KEYS.SESSION)
     await SecureStore.deleteItemAsync(STORAGE_KEYS.USER)
+
+    // Log logout event
+    if (logUser) {
+      logAuthEvent('auth:logout', logUser)
+    }
   } catch (error) {
     console.error('Logout error:', error)
   }
