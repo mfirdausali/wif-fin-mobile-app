@@ -92,8 +92,8 @@ export default function BookingsScreen() {
     const totalB2BValue = bookings.reduce((sum, b) => sum + b.totalB2BCostJPY, 0)
 
     return {
-      active: activeBookings.length || 3,
-      totalValue: totalB2BValue || 1847200,
+      active: activeBookings.length,
+      totalValue: totalB2BValue,
     }
   }, [bookings])
 
