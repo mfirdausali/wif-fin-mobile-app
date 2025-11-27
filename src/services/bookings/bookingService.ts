@@ -37,6 +37,47 @@ function toActivityBookingInfo(booking: Partial<Booking> & { id: string; booking
 const DEFAULT_COMPANY_ID = 'c0000000-0000-0000-0000-000000000001'
 
 // ============================================================================
+// STATUS TRANSITION VALIDATION
+// ============================================================================
+
+/**
+ * Valid status transitions for bookings
+ * Prevents invalid state changes (e.g., completed → draft)
+ */
+const VALID_BOOKING_STATUS_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
+  draft: ['planning', 'cancelled'],
+  planning: ['confirmed', 'cancelled'],
+  confirmed: ['in_progress', 'cancelled'],
+  in_progress: ['completed', 'cancelled'],
+  completed: [], // Final state - no transitions allowed
+  cancelled: ['draft'], // Can only reopen to draft
+}
+
+/**
+ * Check if a booking status transition is valid
+ * @param currentStatus - Current booking status
+ * @param newStatus - Desired new status
+ * @returns True if transition is allowed, false otherwise
+ */
+export function isValidBookingStatusTransition(
+  currentStatus: BookingStatus,
+  newStatus: BookingStatus
+): boolean {
+  if (currentStatus === newStatus) return true // No change is always valid
+  const allowedTransitions = VALID_BOOKING_STATUS_TRANSITIONS[currentStatus] || []
+  return allowedTransitions.includes(newStatus)
+}
+
+/**
+ * Get allowed next statuses for a given booking status
+ * @param currentStatus - Current booking status
+ * @returns Array of allowed next statuses
+ */
+export function getAllowedNextBookingStatuses(currentStatus: BookingStatus): BookingStatus[] {
+  return VALID_BOOKING_STATUS_TRANSITIONS[currentStatus] || []
+}
+
+// ============================================================================
 // BOOKING NUMBER GENERATION
 // ============================================================================
 
@@ -234,13 +275,33 @@ export async function createBooking(
  * @param bookingId - Booking ID to update
  * @param updates - Partial booking updates
  * @param user - Optional user for activity logging
+ * @param expectedUpdatedAt - Optional timestamp for optimistic locking (ISO 8601 format)
+ * @returns Updated booking or null if not found
+ * @throws Error if booking was modified by another user (concurrent edit detected)
  */
 export async function updateBooking(
   bookingId: string,
   updates: Partial<Booking>,
-  user?: ActivityUser
+  user?: ActivityUser,
+  expectedUpdatedAt?: string
 ): Promise<Booking | null> {
   try {
+    // Optimistic locking: Check if booking was modified by another user
+    if (expectedUpdatedAt) {
+      const { data: currentBooking, error: checkError } = await supabase
+        .from('bookings')
+        .select('updated_at')
+        .eq('id', bookingId)
+        .maybeSingle()
+
+      if (checkError) throw checkError
+      if (!currentBooking) return null
+
+      if (currentBooking.updated_at !== expectedUpdatedAt) {
+        throw new Error('Booking was modified by another user')
+      }
+    }
+
     // Build update object with CORRECT column names
     const updateData: Record<string, any> = {}
 
@@ -330,35 +391,53 @@ export async function updateBooking(
 }
 
 /**
- * Update booking status
+ * Update booking status with transition validation
  * @param bookingId - Booking ID
  * @param status - New status
  * @param user - Optional user for activity logging
+ * @param skipValidation - Skip validation (use with caution, for admin overrides only)
+ * @returns Object with success flag and optional error message
  */
 export async function updateBookingStatus(
   bookingId: string,
   status: BookingStatus,
-  user?: ActivityUser
-): Promise<boolean> {
+  user?: ActivityUser,
+  skipValidation: boolean = false
+): Promise<{ success: boolean; error?: string }> {
   try {
-    // Get current booking info for logging
-    const { data: bookingInfo } = await supabase
+    // Get current booking info for validation and logging
+    const { data: bookingInfo, error: fetchError } = await supabase
       .from('bookings')
       .select('booking_code, guest_name, status')
       .eq('id', bookingId)
       .single()
 
-    const previousStatus = bookingInfo?.status
+    if (fetchError || !bookingInfo) {
+      return { success: false, error: 'Booking not found' }
+    }
 
-    const { error } = await supabase
+    const previousStatus = bookingInfo.status as BookingStatus
+
+    // Validate status transition unless skipped
+    if (!skipValidation && !isValidBookingStatusTransition(previousStatus, status)) {
+      const allowedNext = getAllowedNextBookingStatuses(previousStatus)
+      const allowedStr = allowedNext.length > 0 ? allowedNext.join(', ') : 'none (final state)'
+      console.warn(`Invalid booking status transition: ${previousStatus} → ${status}. Allowed: ${allowedStr}`)
+      return {
+        success: false,
+        error: `Cannot change status from "${previousStatus}" to "${status}". Allowed transitions: ${allowedStr}`,
+      }
+    }
+
+    const { error: updateError } = await supabase
       .from('bookings')
       .update({ status })
       .eq('id', bookingId)
 
-    if (error) throw error
+    if (updateError) throw updateError
 
     // Log activity if user is provided
-    if (user && bookingInfo) {
+    if (user) {
       logBookingEvent('booking:status_changed', user, {
         id: bookingId,
         bookingNumber: bookingInfo.booking_code,
@@ -370,10 +449,10 @@ export async function updateBookingStatus(
       })
     }
 
-    return true
+    return { success: true }
   } catch (error) {
     console.error('Error updating booking status:', error)
-    return false
+    return { success: false, error: `Failed to update status: ${error}` }
   }
 }
 
@@ -433,6 +512,133 @@ export async function linkDocumentToBooking(
   } catch (error) {
     console.error('Error linking document to booking:', error)
     return false
+  }
+}
+
+// ============================================================================
+// BOOKING-TO-INVOICE WORKFLOW
+// ============================================================================
+
+/**
+ * Create an invoice from a booking
+ * This helper function streamlines the booking → invoice workflow by:
+ * 1. Fetching the booking data
+ * 2. Creating an invoice with aggregated cost items by category
+ * 3. Linking the invoice to the booking
+ * 4. Updating the booking with the invoice reference
+ *
+ * @param bookingId - ID of the booking to create invoice from
+ * @param user - User creating the invoice (for activity logging)
+ * @param companyId - Company ID (defaults to single-tenant mode)
+ * @returns The created invoice document, or null if booking not found
+ * @throws Error if invoice creation fails
+ */
+export async function createInvoiceFromBooking(
+  bookingId: string,
+  user: ActivityUser,
+  companyId: string = DEFAULT_COMPANY_ID
+): Promise<any | null> {
+  try {
+    // Import document service (lazy import to avoid circular dependencies)
+    const { createDocument } = await import('../documents/documentService')
+
+    // Step 1: Fetch the booking
+    const booking = await getBooking(bookingId)
+    if (!booking) {
+      console.error(`Booking ${bookingId} not found`)
+      return null
+    }
+
+    // Step 2: Aggregate cost items by category to create invoice line items
+    const lineItems: any[] = []
+    let lineNumber = 1
+
+    // Helper to add category if it has items
+    const addCategory = (categoryName: string, items: BookingCostItem[]) => {
+      if (items && items.length > 0) {
+        const categoryTotal = items.reduce((sum, item) => sum + (item.b2bTotal || 0), 0)
+        if (categoryTotal > 0) {
+          lineItems.push({
+            id: lineNumber.toString(),
+            description: categoryName,
+            quantity: 1,
+            unitPrice: categoryTotal,
+            amount: categoryTotal,
+          })
+          lineNumber++
+        }
+      }
+    }
+
+    // Add all categories
+    addCategory('Transportation', booking.transportation)
+    addCategory('Meals', booking.meals)
+    addCategory('Entrance Fees', booking.entranceFees)
+    addCategory('Tour Guides', booking.tourGuides)
+    addCategory('Flights', booking.flights)
+    addCategory('Accommodation', booking.accommodation)
+    addCategory('Other', booking.other)
+
+    // Step 3: Determine currency and amount
+    // Prefer MYR if available, otherwise use JPY
+    const currency = booking.totalB2BCostMYR ? 'MYR' : 'JPY'
+    const totalAmount = booking.totalB2BCostMYR || booking.totalB2BCostJPY
+
+    // Calculate subtotal and tax (assume 0% tax by default)
+    const subtotal = totalAmount
+    const taxRate = 0
+    const taxAmount = 0
+    const total = totalAmount
+
+    // Step 4: Create invoice date (today) and due date (30 days from now)
+    const today = new Date()
+    const invoiceDate = today.toISOString().split('T')[0]
+    const dueDate = new Date(today.setDate(today.getDate() + 30)).toISOString().split('T')[0]
+
+    // Step 5: Build invoice data
+    const invoiceData = {
+      documentType: 'invoice' as const,
+      documentNumber: '', // Will be generated by createDocument
+      status: 'draft' as const,
+      date: invoiceDate,
+      currency: currency as 'MYR' | 'JPY',
+      country: 'Malaysia' as const,
+      amount: totalAmount,
+      subtotal,
+      taxRate,
+      taxAmount,
+      total,
+      notes: `Generated from booking ${booking.bookingNumber}`,
+
+      // Invoice-specific fields
+      customerName: booking.guestName,
+      customerAddress: undefined,
+      customerEmail: undefined,
+      invoiceDate,
+      dueDate,
+      items: lineItems,
+      paymentTerms: 'Net 30',
+    }
+
+    // Step 6: Create the invoice document
+    const invoice = await createDocument(invoiceData, companyId, bookingId, user)
+
+    // Step 7: Update booking with invoice reference
+    await linkDocumentToBooking(bookingId, invoice.id)
+
+    // Log activity (using generic booking:updated event since booking:invoice_created may not be defined)
+    logBookingEvent('booking:updated', user, toActivityBookingInfo(booking), {
+      action: 'invoice_created',
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.documentNumber,
+      amount: totalAmount,
+      currency,
+    })
+
+    return invoice
+  } catch (error) {
+    console.error('Error creating invoice from booking:', error)
+    throw new Error(`Failed to create invoice from booking: ${error}`)
   }
 }
 
@@ -586,5 +792,61 @@ function dbBookingToBooking(dbBooking: any): Booking {
     createdBy: undefined,
     createdAt: dbBooking.created_at,
     updatedAt: dbBooking.updated_at,
+  }
+}
+
+// ============================================================================
+// CONCURRENCY & DATA INTEGRITY
+// ============================================================================
+
+/**
+ * Check booking version for optimistic locking
+ * Returns the current version info (updated_at timestamp) for a booking
+ * @param bookingId - Booking ID to check
+ * @returns Version info with updatedAt timestamp, or null if booking not found
+ */
+export async function checkBookingVersion(
+  bookingId: string
+): Promise<{ updatedAt: string; updatedBy?: string } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('updated_at')
+      .eq('id', bookingId)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (error) throw error
+    if (!data) return null
+
+    return {
+      updatedAt: data.updated_at,
+      updatedBy: undefined, // Could be extended if we track updated_by in the future
+    }
+  } catch (error) {
+    console.error('Error checking booking version:', error)
+    return null
+  }
+}
+
+/**
+ * Check if a booking is stale (has been updated since a known timestamp)
+ * Used to detect if local data is out of sync with server
+ * @param bookingId - Booking ID to check
+ * @param lastKnownUpdatedAt - Last known updated_at timestamp (ISO 8601 format)
+ * @returns true if booking has been updated since lastKnownUpdatedAt, false otherwise
+ */
+export async function isBookingStale(
+  bookingId: string,
+  lastKnownUpdatedAt: string
+): Promise<boolean> {
+  try {
+    const currentVersion = await checkBookingVersion(bookingId)
+    if (!currentVersion) return false // Booking doesn't exist or was deleted
+
+    return currentVersion.updatedAt !== lastKnownUpdatedAt
+  } catch (error) {
+    console.error('Error checking if booking is stale:', error)
+    return false
   }
 }

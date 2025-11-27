@@ -25,6 +25,13 @@ import {
 } from '../../types'
 import { logDocumentEvent } from '../activity/activityLogService'
 import type { ActivityUser, ActivityDocumentInfo } from '../../types/activity'
+import {
+  NotFoundError,
+  ConflictError,
+  InvalidStatusTransitionError,
+  fromSupabaseError,
+  logError,
+} from '../../utils/errors'
 
 /**
  * Helper to create ActivityDocumentInfo from Document
@@ -159,7 +166,7 @@ export async function getDocuments(
 
     const { data, error } = await query
 
-    if (error) throw error
+    if (error) throw fromSupabaseError(error)
 
     // Fetch complete documents with type-specific data
     const documents = await Promise.all(
@@ -168,8 +175,8 @@ export async function getDocuments(
 
     return documents.filter((doc): doc is Document => doc !== null)
   } catch (error) {
-    console.error('Error getting documents:', error)
-    throw new Error(`Failed to get documents: ${error}`)
+    logError(error, 'getDocuments')
+    throw error
   }
 }
 
@@ -188,8 +195,8 @@ export async function getDocument(
       .eq('id', documentId)
       .single()
 
-    if (docError) throw docError
-    if (!docData) return null
+    if (docError) throw fromSupabaseError(docError)
+    if (!docData) throw new NotFoundError('Document not found', { documentId })
 
     // Get line items
     const { data: items, error: itemsError } = await supabase
@@ -198,7 +205,7 @@ export async function getDocument(
       .eq('document_id', documentId)
       .order('line_number')
 
-    if (itemsError) throw itemsError
+    if (itemsError) throw fromSupabaseError(itemsError)
 
     // Get type-specific data and construct document
     switch (documentType) {
@@ -214,8 +221,12 @@ export async function getDocument(
         throw new Error(`Unknown document type: ${documentType}`)
     }
   } catch (error) {
-    console.error('Error getting document:', error)
-    return null
+    logError(error, 'getDocument')
+    // Return null for NotFoundError to maintain backward compatibility
+    if (error instanceof NotFoundError) {
+      return null
+    }
+    throw error
   }
 }
 
@@ -292,7 +303,7 @@ export async function createDocument(
       .select()
       .single()
 
-    if (docError) throw docError
+    if (docError) throw fromSupabaseError(docError)
     documentId = docData!.id
 
     // Create type-specific data (with rollback on failure)
@@ -332,7 +343,7 @@ export async function createDocument(
     const createdDoc = await getDocument(documentId, document.documentType)
     if (!createdDoc) {
       await rollbackDocument(documentId)
-      throw new Error('Failed to fetch created document')
+      throw new NotFoundError('Failed to fetch created document', { documentId })
     }
 
     // Log activity if user is provided
@@ -350,8 +361,8 @@ export async function createDocument(
     if (documentId && !(error instanceof Error && error.message.includes('rolling back'))) {
       await rollbackDocument(documentId)
     }
-    console.error('Error creating document:', error)
-    throw new Error(`Failed to create document: ${error}`)
+    logError(error, 'createDocument')
+    throw error
   }
 }
 
@@ -364,22 +375,35 @@ export async function createDocument(
  * @param documentId - Document ID to update
  * @param updates - Partial document updates
  * @param user - Optional user for activity logging
+ * @param expectedUpdatedAt - Optional timestamp for optimistic locking (ISO 8601 format)
+ * @returns Updated document or null if not found
+ * @throws Error if document was modified by another user (concurrent edit detected)
  */
 export async function updateDocument(
   documentId: string,
   updates: Partial<Document>,
-  user?: ActivityUser
+  user?: ActivityUser,
+  expectedUpdatedAt?: string
 ): Promise<Document | null> {
   try {
-    // First check if document exists
+    // First check if document exists and get version info
     const { data: existingDoc, error: checkError } = await supabase
       .from('documents')
-      .select('id, document_type')
+      .select('id, document_type, updated_at')
       .eq('id', documentId)
       .maybeSingle()
 
-    if (checkError) throw checkError
-    if (!existingDoc) return null
+    if (checkError) throw fromSupabaseError(checkError)
+    if (!existingDoc) throw new NotFoundError('Document not found', { documentId })
+
+    // Optimistic locking: Check if document was modified by another user
+    if (expectedUpdatedAt && existingDoc.updated_at !== expectedUpdatedAt) {
+      throw new ConflictError('Document was modified by another user', {
+        documentId,
+        expectedUpdatedAt,
+        actualUpdatedAt: existingDoc.updated_at,
+      })
+    }
 
     const documentType = existingDoc.document_type as DocumentType
 
@@ -400,7 +424,7 @@ export async function updateDocument(
       })
       .eq('id', documentId)
 
-    if (updateError) throw updateError
+    if (updateError) throw fromSupabaseError(updateError)
 
     // Update type-specific data
     switch (documentType) {
@@ -964,5 +988,61 @@ async function getStatementOfPaymentData(doc: any, items: any[]): Promise<Statem
     totalDeducted: statementData.total_deducted,
     createdAt: doc.created_at,
     updatedAt: doc.updated_at,
+  }
+}
+
+// ============================================================================
+// CONCURRENCY & DATA INTEGRITY
+// ============================================================================
+
+/**
+ * Check document version for optimistic locking
+ * Returns the current version info (updated_at timestamp) for a document
+ * @param documentId - Document ID to check
+ * @returns Version info with updatedAt timestamp, or null if document not found
+ */
+export async function checkDocumentVersion(
+  documentId: string
+): Promise<{ updatedAt: string; updatedBy?: string } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('updated_at')
+      .eq('id', documentId)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (error) throw error
+    if (!data) return null
+
+    return {
+      updatedAt: data.updated_at,
+      updatedBy: undefined, // Could be extended if we track updated_by in the future
+    }
+  } catch (error) {
+    console.error('Error checking document version:', error)
+    return null
+  }
+}
+
+/**
+ * Check if a document is stale (has been updated since a known timestamp)
+ * Used to detect if local data is out of sync with server
+ * @param documentId - Document ID to check
+ * @param lastKnownUpdatedAt - Last known updated_at timestamp (ISO 8601 format)
+ * @returns true if document has been updated since lastKnownUpdatedAt, false otherwise
+ */
+export async function isDocumentStale(
+  documentId: string,
+  lastKnownUpdatedAt: string
+): Promise<boolean> {
+  try {
+    const currentVersion = await checkDocumentVersion(documentId)
+    if (!currentVersion) return false // Document doesn't exist or was deleted
+
+    return currentVersion.updatedAt !== lastKnownUpdatedAt
+  } catch (error) {
+    console.error('Error checking if document is stale:', error)
+    return false
   }
 }
