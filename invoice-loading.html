@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIF Japan — Document Loading States</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* WIF Japan Design System */
+            --sumi-ink: #1A1815;
+            --sumi-ink-light: #2D2A26;
+            
+            --kin-gold: #B8963F;
+            --kin-gold-soft: rgba(184, 150, 63, 0.12);
+            --kin-gold-glow: rgba(184, 150, 63, 0.15);
+            
+            /* Backgrounds */
+            --bg-primary: #FAF8F5;
+            --bg-secondary: #F3F0EB;
+            --bg-card: #FFFFFF;
+            --bg-section: #F7F5F2;
+            
+            /* Skeleton Colors */
+            --skeleton-base: #EDEAE4;
+            --skeleton-shimmer: rgba(184, 150, 63, 0.08);
+            
+            /* Text */
+            --text-primary: #1A1815;
+            --text-muted: #8C8680;
+            --text-inverse: #FFFFFF;
+            
+            /* Borders */
+            --border-subtle: rgba(26, 24, 21, 0.08);
+            
+            /* Shadows */
+            --shadow-card: 0 4px 12px rgba(26, 24, 21, 0.08), 0 2px 4px rgba(26, 24, 21, 0.04);
+            --shadow-float: 0 8px 24px rgba(26, 24, 21, 0.12), 0 4px 8px rgba(26, 24, 21, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(145deg, #E8E4DE 0%, #D5D0C8 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Phone Frame */
+        .phone-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: linear-gradient(145deg, #2A2A2A 0%, #1A1A1A 100%);
+            border-radius: 55px;
+            padding: 12px;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.3);
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-secondary);
+            border-radius: 44px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 50px;
+            padding: 0 24px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 6px;
+            background: var(--sumi-ink);
+        }
+
+        .status-bar .time {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-inverse);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--sumi-ink) 0%, var(--sumi-ink-light) 100%);
+            padding: 0 16px 24px;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at top right, var(--kin-gold-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            padding: 8px 0;
+        }
+
+        .header-btn svg {
+            width: 20px;
+            height: 20px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .header-btn span {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .header-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-inverse);
+            text-align: center;
+            flex: 1;
+        }
+
+        .header-action {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .header-action svg {
+            width: 18px;
+            height: 18px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Content */
+        .content {
+            flex: 1;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Labels */
+        .screen-label {
+            text-align: center;
+            margin-top: 1.25rem;
+        }
+
+        .label-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .label-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            max-width: 260px;
+            line-height: 1.4;
+        }
+
+        /* ==================== SKELETON STYLES ==================== */
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .skeleton {
+            background: var(--skeleton-base);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skeleton::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                var(--skeleton-shimmer) 20%,
+                rgba(184, 150, 63, 0.12) 50%,
+                var(--skeleton-shimmer) 80%,
+                transparent 100%
+            );
+            animation: shimmer 1.8s infinite;
+        }
+
+        /* Floating Amount Card Skeleton */
+        .amount-card-skeleton {
+            background: var(--bg-card);
+            margin: -16px 16px 0;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--shadow-float);
+            position: relative;
+            z-index: 10;
+        }
+
+        .amount-card-skeleton .label {
+            width: 90px;
+            height: 10px;
+            margin-bottom: 12px;
+        }
+
+        .amount-card-skeleton .amount {
+            width: 180px;
+            height: 32px;
+            margin-bottom: 12px;
+        }
+
+        .amount-card-skeleton .meta-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .amount-card-skeleton .invoice-id {
+            width: 80px;
+            height: 14px;
+        }
+
+        .amount-card-skeleton .due-date {
+            width: 120px;
+            height: 14px;
+        }
+
+        /* Gold Accent Bar - Pulsing */
+        .gold-accent-bar {
+            height: 3px;
+            background: var(--kin-gold);
+            border-radius: 2px;
+            margin-bottom: 16px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* Section Skeleton */
+        .section-skeleton {
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .section-header-skeleton {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: var(--bg-section);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .section-icon-skeleton {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--kin-gold-soft);
+        }
+
+        .section-title-skeleton {
+            width: 80px;
+            height: 12px;
+        }
+
+        .section-content-skeleton {
+            padding: 16px;
+        }
+
+        .row-skeleton {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .row-skeleton:last-child {
+            border-bottom: none;
+        }
+
+        .row-skeleton .label {
+            width: 70px;
+            height: 12px;
+        }
+
+        .row-skeleton .value {
+            width: 120px;
+            height: 14px;
+        }
+
+        /* Customer Row Skeleton */
+        .customer-skeleton {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+        }
+
+        .customer-avatar-skeleton {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--kin-gold-soft);
+        }
+
+        .customer-info-skeleton {
+            flex: 1;
+        }
+
+        .customer-name-skeleton {
+            width: 140px;
+            height: 14px;
+            margin-bottom: 6px;
+        }
+
+        .customer-email-skeleton {
+            width: 100px;
+            height: 10px;
+        }
+
+        /* Line Items Skeleton */
+        .line-item-skeleton {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .line-item-skeleton:last-child {
+            border-bottom: none;
+        }
+
+        .line-item-main-skeleton {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .line-item-desc-skeleton {
+            width: 140px;
+            height: 14px;
+        }
+
+        .line-item-amount-skeleton {
+            width: 80px;
+            height: 14px;
+        }
+
+        .line-item-meta-skeleton {
+            width: 70px;
+            height: 10px;
+        }
+
+        /* ==================== CURRENT SPINNER (BAD) ==================== */
+
+        .spinner-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: var(--bg-primary);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            position: relative;
+        }
+
+        .spinner-blade {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 3px;
+            height: 10px;
+            background: var(--kin-gold);
+            border-radius: 2px;
+            transform-origin: center -8px;
+            opacity: 0.2;
+        }
+
+        @keyframes spinner-fade {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        .spinner-blade:nth-child(1) { transform: rotate(0deg) translateY(-8px); animation: spinner-fade 1s 0s infinite; }
+        .spinner-blade:nth-child(2) { transform: rotate(45deg) translateY(-8px); animation: spinner-fade 1s 0.125s infinite; }
+        .spinner-blade:nth-child(3) { transform: rotate(90deg) translateY(-8px); animation: spinner-fade 1s 0.25s infinite; }
+        .spinner-blade:nth-child(4) { transform: rotate(135deg) translateY(-8px); animation: spinner-fade 1s 0.375s infinite; }
+        .spinner-blade:nth-child(5) { transform: rotate(180deg) translateY(-8px); animation: spinner-fade 1s 0.5s infinite; }
+        .spinner-blade:nth-child(6) { transform: rotate(225deg) translateY(-8px); animation: spinner-fade 1s 0.625s infinite; }
+        .spinner-blade:nth-child(7) { transform: rotate(270deg) translateY(-8px); animation: spinner-fade 1s 0.75s infinite; }
+        .spinner-blade:nth-child(8) { transform: rotate(315deg) translateY(-8px); animation: spinner-fade 1s 0.875s infinite; }
+
+        .spinner-text {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        /* ==================== RECOMMENDATION BADGE ==================== */
+
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #4A7A5A;
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.not-recommended {
+            background: var(--text-muted);
+        }
+
+        /* ==================== COMPARISON TABLE ==================== */
+
+        .comparison {
+            max-width: 600px;
+            margin: 2rem auto 0;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+
+        .comparison h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .comparison-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: var(--bg-section);
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border-subtle);
+        }
+
+        .comparison-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .checkmark {
+            color: #4A7A5A;
+            font-weight: 700;
+        }
+
+        .crossmark {
+            color: #C75B4A;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Option 1: Current Spinner (Not Recommended) -->
+    <div class="phone-container" style="position: relative;">
+        <span class="badge not-recommended">Current</span>
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <div class="status-bar">
+                    <span class="time">16:35</span>
+                </div>
+
+                <div class="spinner-container">
+                    <div class="spinner">
+                        <div class="spinner-blade"></div>
+                        <div class="spinner-blade"></div>
+                        <div class="spinner-blade"></div>
+                        <div class="spinner-blade"></div>
+                        <div class="spinner-blade"></div>
+                        <div class="spinner-blade"></div>
+                        <div class="spinner-blade"></div>
+                        <div class="spinner-blade"></div>
+                    </div>
+                    <span class="spinner-text">Loading document...</span>
+                </div>
+            </div>
+        </div>
+        <div class="screen-label">
+            <div class="label-name">Spinner Only</div>
+            <div class="label-desc">No context. Feels slow. User doesn't know what's coming.</div>
+        </div>
+    </div>
+
+    <!-- Option 2: Skeleton Screen (Recommended) -->
+    <div class="phone-container" style="position: relative;">
+        <span class="badge">Recommended</span>
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <div class="status-bar">
+                    <span class="time">16:35</span>
+                </div>
+
+                <div class="header">
+                    <div class="header-nav">
+                        <button class="header-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M15 18l-6-6 6-6"/>
+                            </svg>
+                            <span>Back</span>
+                        </button>
+                        <span class="header-title">Invoice Details</span>
+                        <button class="header-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1"/>
+                                <circle cx="12" cy="5" r="1"/>
+                                <circle cx="12" cy="19" r="1"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Floating Amount Card Skeleton -->
+                <div class="amount-card-skeleton">
+                    <div class="gold-accent-bar" style="width: 40px;"></div>
+                    <div class="skeleton label"></div>
+                    <div class="skeleton amount"></div>
+                    <div class="meta-row">
+                        <div class="skeleton invoice-id"></div>
+                        <div class="skeleton due-date"></div>
+                    </div>
+                </div>
+
+                <div class="content">
+                    <!-- Customer Section Skeleton -->
+                    <div class="section-skeleton">
+                        <div class="section-header-skeleton">
+                            <div class="section-icon-skeleton"></div>
+                            <div class="skeleton section-title-skeleton"></div>
+                        </div>
+                        <div class="customer-skeleton">
+                            <div class="customer-avatar-skeleton"></div>
+                            <div class="customer-info-skeleton">
+                                <div class="skeleton customer-name-skeleton"></div>
+                                <div class="skeleton customer-email-skeleton"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details Section Skeleton -->
+                    <div class="section-skeleton">
+                        <div class="section-header-skeleton">
+                            <div class="section-icon-skeleton"></div>
+                            <div class="skeleton section-title-skeleton"></div>
+                        </div>
+                        <div class="section-content-skeleton">
+                            <div class="row-skeleton">
+                                <div class="skeleton label"></div>
+                                <div class="skeleton value"></div>
+                            </div>
+                            <div class="row-skeleton">
+                                <div class="skeleton label"></div>
+                                <div class="skeleton value"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Line Items Section Skeleton -->
+                    <div class="section-skeleton">
+                        <div class="section-header-skeleton">
+                            <div class="section-icon-skeleton"></div>
+                            <div class="skeleton section-title-skeleton"></div>
+                        </div>
+                        <div class="section-content-skeleton">
+                            <div class="line-item-skeleton">
+                                <div class="line-item-main-skeleton">
+                                    <div class="skeleton line-item-desc-skeleton"></div>
+                                    <div class="skeleton line-item-amount-skeleton"></div>
+                                </div>
+                                <div class="skeleton line-item-meta-skeleton"></div>
+                            </div>
+                            <div class="line-item-skeleton">
+                                <div class="line-item-main-skeleton">
+                                    <div class="skeleton line-item-desc-skeleton"></div>
+                                    <div class="skeleton line-item-amount-skeleton"></div>
+                                </div>
+                                <div class="skeleton line-item-meta-skeleton"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="screen-label">
+            <div class="label-name">Skeleton Screen</div>
+            <div class="label-desc">Shows structure. Reduces perceived wait. User knows what's coming.</div>
+        </div>
+    </div>
+
+    <!-- Comparison -->
+    <div class="comparison">
+        <h2>When to Use Each</h2>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Spinner</th>
+                    <th>Skeleton</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Load time &lt; 500ms</td>
+                    <td class="checkmark">✓ OK</td>
+                    <td class="checkmark">✓ OK</td>
+                </tr>
+                <tr>
+                    <td>Load time 500ms - 2s</td>
+                    <td class="crossmark">✗ Feels slow</td>
+                    <td class="checkmark">✓ Best</td>
+                </tr>
+                <tr>
+                    <td>Load time &gt; 2s</td>
+                    <td class="crossmark">✗ Frustrating</td>
+                    <td class="checkmark">✓ Essential</td>
+                </tr>
+                <tr>
+                    <td>Shows content structure</td>
+                    <td class="crossmark">✗ No</td>
+                    <td class="checkmark">✓ Yes</td>
+                </tr>
+                <tr>
+                    <td>Reduces perceived wait</td>
+                    <td class="crossmark">✗ No</td>
+                    <td class="checkmark">✓ Yes</td>
+                </tr>
+                <tr>
+                    <td>User knows what's coming</td>
+                    <td class="crossmark">✗ No</td>
+                    <td class="checkmark">✓ Yes</td>
+                </tr>
+                <tr>
+                    <td>Brand presence</td>
+                    <td>Gold spinner color</td>
+                    <td>Gold shimmer + accent bar</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

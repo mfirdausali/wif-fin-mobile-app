@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIF Japan — Document Actions UX Patterns</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #FAF8F5;
+            --bg-card: #FFFFFF;
+            
+            --text-primary: #1A1815;
+            --text-secondary: #5C5650;
+            --text-muted: #8C8680;
+            --text-faint: #B5B0A8;
+            
+            --accent-vermillion: #C75B4A;
+            --accent-vermillion-soft: rgba(199, 91, 74, 0.1);
+            
+            --accent-gold: #B8963F;
+            --accent-gold-soft: rgba(184, 150, 63, 0.12);
+            
+            --accent-jade: #4A7A5A;
+            --accent-jade-soft: rgba(74, 122, 90, 0.1);
+            
+            --accent-indigo: #4A5A7A;
+            --accent-indigo-soft: rgba(74, 90, 122, 0.1);
+            
+            --border-subtle: rgba(26, 24, 21, 0.08);
+            --shadow-card: 0 2px 8px rgba(26, 24, 21, 0.04), 0 1px 2px rgba(26, 24, 21, 0.06);
+            --shadow-md: 0 4px 16px rgba(26, 24, 21, 0.1);
+            
+            --delete-red: #DC3545;
+            --share-blue: #4A5A7A;
+            --edit-gold: #B8963F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background: linear-gradient(145deg, #E8E4DE 0%, #D5D0C8 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .page-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .patterns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(375px, 1fr));
+            gap: 2.5rem;
+            max-width: 1600px;
+            margin: 0 auto 3rem;
+        }
+
+        /* Phone Frame */
+        .phone-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 680px;
+            background: linear-gradient(145deg, #2A2A2A 0%, #1A1A1A 100%);
+            border-radius: 50px;
+            padding: 12px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3);
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            border-radius: 40px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 44px;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .status-time {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Header */
+        .screen-header {
+            padding: 8px 20px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 26px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .header-action {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-card);
+        }
+
+        .header-action svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Filter Pills */
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px 16px;
+            flex-shrink: 0;
+        }
+
+        .filter-pill {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+        }
+
+        .filter-pill.active {
+            background: var(--text-primary);
+            border-color: var(--text-primary);
+            color: white;
+        }
+
+        /* Content */
+        .content {
+            flex: 1;
+            overflow: hidden;
+            padding: 0 20px;
+        }
+
+        /* Month Divider */
+        .month-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .month-divider span {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .month-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+
+        /* Document Card */
+        .document-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .document-type {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .document-type-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-vermillion);
+        }
+
+        .document-type-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent-vermillion);
+        }
+
+        .document-status {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: var(--accent-indigo-soft);
+            color: var(--accent-indigo);
+        }
+
+        .document-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .document-id {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .document-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .document-date {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .document-amount {
+            text-align: right;
+        }
+
+        .document-amount-currency {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .document-amount-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Labels */
+        .pattern-label {
+            text-align: center;
+            margin-top: 1.25rem;
+        }
+
+        .label-number {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-gold);
+            margin-bottom: 4px;
+        }
+
+        .label-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .label-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            max-width: 300px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        /* ==================== PATTERN 1: SWIPE ACTIONS ==================== */
+        
+        .swipe-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .swipe-actions-left {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .swipe-actions-right {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .swipe-action {
+            width: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: white;
+        }
+
+        .swipe-action svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .swipe-action span {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .swipe-action.share {
+            background: var(--share-blue);
+        }
+
+        .swipe-action.edit {
+            background: var(--edit-gold);
+        }
+
+        .swipe-action.delete {
+            background: var(--delete-red);
+        }
+
+        .document-card.swiped-left {
+            transform: translateX(-140px);
+        }
+
+        .document-card.swiped-right {
+            transform: translateX(70px);
+        }
+
+        /* Swipe hint */
+        .swipe-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            background: var(--accent-gold-soft);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .swipe-hint svg {
+            width: 16px;
+            height: 16px;
+            color: var(--accent-gold);
+        }
+
+        .swipe-hint span {
+            font-size: 11px;
+            color: var(--accent-gold);
+            font-weight: 500;
+        }
+
+        /* ==================== PATTERN 2: LONG PRESS CONTEXT MENU ==================== */
+        
+        .context-menu-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .context-menu-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            width: 100%;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .context-menu-preview {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .context-menu-actions {
+            padding: 8px 0;
+        }
+
+        .context-action {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            cursor: pointer;
+        }
+
+        .context-action:active {
+            background: var(--bg-primary);
+        }
+
+        .context-action svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .context-action span {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .context-action.view svg { color: var(--text-secondary); }
+        .context-action.view span { color: var(--text-primary); }
+
+        .context-action.edit svg { color: var(--accent-gold); }
+        .context-action.edit span { color: var(--text-primary); }
+
+        .context-action.share svg { color: var(--accent-indigo); }
+        .context-action.share span { color: var(--text-primary); }
+
+        .context-action.duplicate svg { color: var(--accent-jade); }
+        .context-action.duplicate span { color: var(--text-primary); }
+
+        .context-action.delete {
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 4px;
+            padding-top: 14px;
+        }
+        .context-action.delete svg { color: var(--delete-red); }
+        .context-action.delete span { color: var(--delete-red); }
+
+        /* ==================== PATTERN 3: DETAIL VIEW ==================== */
+        
+        .detail-header {
+            padding: 12px 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+
+        .detail-back {
+            width: 38px;
+            height: 38px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-card);
+        }
+
+        .detail-back svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-primary);
+        }
+
+        .detail-title-area {
+            flex: 1;
+        }
+
+        .detail-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .detail-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .detail-more {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .detail-more svg {
+            width: 22px;
+            height: 22px;
+            color: var(--text-muted);
+        }
+
+        .detail-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .detail-amount-card {
+            background: linear-gradient(135deg, var(--text-primary) 0%, #2A2825 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .detail-amount-label {
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+        }
+
+        .detail-amount-value {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 36px;
+            font-weight: 500;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .detail-amount-status {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .detail-info-section {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .detail-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .detail-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-info-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .detail-info-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Detail Action Bar */
+        .detail-action-bar {
+            display: flex;
+            gap: 10px;
+            padding: 16px 20px 28px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+
+        .detail-action-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+
+        .detail-action-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .detail-action-btn.secondary {
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .detail-action-btn.primary {
+            background: var(--text-primary);
+            color: white;
+        }
+
+        .detail-action-btn.share {
+            background: var(--accent-indigo-soft);
+            color: var(--accent-indigo);
+        }
+
+        /* ==================== PATTERN 4: BOTTOM SHEET ==================== */
+        
+        .bottom-sheet-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 10;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .bottom-sheet {
+            background: var(--bg-card);
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            padding-bottom: 28px;
+        }
+
+        .bottom-sheet-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--border-subtle);
+            border-radius: 2px;
+            margin: 10px auto 16px;
+        }
+
+        .bottom-sheet-header {
+            padding: 0 20px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .bottom-sheet-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .bottom-sheet-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .bottom-sheet-actions {
+            padding: 12px 20px;
+        }
+
+        .bottom-sheet-action {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .bottom-sheet-action:last-child {
+            border-bottom: none;
+        }
+
+        .bottom-sheet-action-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bottom-sheet-action-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .bottom-sheet-action-icon.view {
+            background: var(--bg-primary);
+        }
+        .bottom-sheet-action-icon.view svg {
+            color: var(--text-secondary);
+        }
+
+        .bottom-sheet-action-icon.edit {
+            background: var(--accent-gold-soft);
+        }
+        .bottom-sheet-action-icon.edit svg {
+            color: var(--accent-gold);
+        }
+
+        .bottom-sheet-action-icon.share {
+            background: var(--accent-indigo-soft);
+        }
+        .bottom-sheet-action-icon.share svg {
+            color: var(--accent-indigo);
+        }
+
+        .bottom-sheet-action-icon.duplicate {
+            background: var(--accent-jade-soft);
+        }
+        .bottom-sheet-action-icon.duplicate svg {
+            color: var(--accent-jade);
+        }
+
+        .bottom-sheet-action-icon.delete {
+            background: var(--accent-vermillion-soft);
+        }
+        .bottom-sheet-action-icon.delete svg {
+            color: var(--delete-red);
+        }
+
+        .bottom-sheet-action-text {
+            flex: 1;
+        }
+
+        .bottom-sheet-action-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .bottom-sheet-action-title.delete {
+            color: var(--delete-red);
+        }
+
+        .bottom-sheet-action-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .bottom-sheet-action-arrow svg {
+            width: 18px;
+            height: 18px;
+            color: var(--text-faint);
+        }
+
+        /* Cancel button */
+        .bottom-sheet-cancel {
+            margin: 8px 20px 0;
+            padding: 14px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        /* Recommendation Section */
+        .recommendation {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+
+        .recommendation h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .recommendation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .rec-card {
+            padding: 20px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+        }
+
+        .rec-card h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rec-card p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .rec-badge {
+            font-size: 9px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .rec-badge.primary {
+            background: var(--accent-gold);
+            color: white;
+        }
+
+        .rec-badge.quick {
+            background: var(--accent-jade-soft);
+            color: var(--accent-jade);
+        }
+
+        .rec-badge.safe {
+            background: var(--accent-vermillion-soft);
+            color: var(--accent-vermillion);
+        }
+
+        .final-rec {
+            padding: 20px;
+            background: var(--accent-gold-soft);
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-gold);
+        }
+
+        .final-rec h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+        }
+
+        .final-rec p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-header">
+        <h1 class="page-title">Document Actions UX</h1>
+        <p class="page-subtitle">Delete, Share, Edit — Four interaction patterns</p>
+    </div>
+
+    <div class="patterns-grid">
+
+        <!-- PATTERN 1: Swipe Actions -->
+        <div class="phone-container">
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span></span>
+                        <span class="status-time">13:32</span>
+                        <span></span>
+                    </div>
+
+                    <div class="screen-header">
+                        <h1 class="header-title">Documents</h1>
+                        <div class="header-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="filter-pills">
+                        <div class="filter-pill active">All</div>
+                        <div class="filter-pill">Invoices</div>
+                        <div class="filter-pill">Receipts</div>
+                    </div>
+
+                    <div class="content">
+                        <div class="swipe-hint">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                            <span>Swipe for quick actions</span>
+                        </div>
+
+                        <div class="month-divider">
+                            <span>November 2025</span>
+                        </div>
+
+                        <!-- Normal card -->
+                        <div class="document-card">
+                            <div class="document-header">
+                                <div class="document-type">
+                                    <div class="document-type-dot"></div>
+                                    <span class="document-type-label">Invoice</span>
+                                </div>
+                                <div class="document-status">Issued</div>
+                            </div>
+                            <div class="document-title">Firdaus Ali</div>
+                            <div class="document-id">WIF-INV-20251126-001</div>
+                            <div class="document-footer">
+                                <span class="document-date">26 Nov 2025</span>
+                                <div class="document-amount">
+                                    <span class="document-amount-currency">JPY</span>
+                                    <span class="document-amount-value">27,500.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Swiped left to reveal actions -->
+                        <div class="swipe-container">
+                            <div class="swipe-actions-right">
+                                <div class="swipe-action edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                    <span>Edit</span>
+                                </div>
+                                <div class="swipe-action delete">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                    </svg>
+                                    <span>Delete</span>
+                                </div>
+                            </div>
+                            <div class="document-card swiped-left">
+                                <div class="document-header">
+                                    <div class="document-type">
+                                        <div class="document-type-dot"></div>
+                                        <span class="document-type-label">Invoice</span>
+                                    </div>
+                                    <div class="document-status">Issued</div>
+                                </div>
+                                <div class="document-title">ARBA Hilmi Salleh</div>
+                                <div class="document-id">WIF250170</div>
+                                <div class="document-footer">
+                                    <span class="document-date">21 Nov 2025</span>
+                                    <div class="document-amount">
+                                        <span class="document-amount-currency">MYR</span>
+                                        <span class="document-amount-value">23,845.20</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Swiped right for share -->
+                        <div class="swipe-container">
+                            <div class="swipe-actions-left">
+                                <div class="swipe-action share">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                                        <polyline points="16,6 12,2 8,6"/>
+                                        <line x1="12" y1="2" x2="12" y2="15"/>
+                                    </svg>
+                                    <span>Share</span>
+                                </div>
+                            </div>
+                            <div class="document-card swiped-right">
+                                <div class="document-header">
+                                    <div class="document-type">
+                                        <div class="document-type-dot" style="background: var(--accent-gold);"></div>
+                                        <span class="document-type-label" style="color: var(--accent-gold);">Receipt</span>
+                                    </div>
+                                    <div class="document-status" style="background: var(--accent-jade-soft); color: var(--accent-jade);">Paid</div>
+                                </div>
+                                <div class="document-title">Hotel Booking</div>
+                                <div class="document-id">WIF-RCP-20251118-003</div>
+                                <div class="document-footer">
+                                    <span class="document-date">18 Nov 2025</span>
+                                    <div class="document-amount">
+                                        <span class="document-amount-currency">JPY</span>
+                                        <span class="document-amount-value">156,000.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pattern-label">
+                <div class="label-number">Pattern 1</div>
+                <div class="label-name">Swipe Actions</div>
+                <div class="label-desc">iOS-native feel. Swipe left for Edit/Delete, swipe right for Share. Fast, discoverable with hint.</div>
+            </div>
+        </div>
+
+        <!-- PATTERN 2: Long Press Context Menu -->
+        <div class="phone-container">
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span></span>
+                        <span class="status-time">13:32</span>
+                        <span></span>
+                    </div>
+
+                    <div class="screen-header">
+                        <h1 class="header-title">Documents</h1>
+                        <div class="header-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="context-menu-overlay">
+                        <div class="context-menu-card">
+                            <div class="context-menu-preview">
+                                <div class="document-header">
+                                    <div class="document-type">
+                                        <div class="document-type-dot"></div>
+                                        <span class="document-type-label">Invoice</span>
+                                    </div>
+                                    <div class="document-status">Issued</div>
+                                </div>
+                                <div class="document-title">ARBA Hilmi Salleh</div>
+                                <div class="document-id">WIF250170</div>
+                            </div>
+                            <div class="context-menu-actions">
+                                <div class="context-action view">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <span>View Details</span>
+                                </div>
+                                <div class="context-action edit">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                    <span>Edit</span>
+                                </div>
+                                <div class="context-action share">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                                        <polyline points="16,6 12,2 8,6"/>
+                                        <line x1="12" y1="2" x2="12" y2="15"/>
+                                    </svg>
+                                    <span>Share PDF</span>
+                                </div>
+                                <div class="context-action duplicate">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                                    </svg>
+                                    <span>Duplicate</span>
+                                </div>
+                                <div class="context-action delete">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                    </svg>
+                                    <span>Delete</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pattern-label">
+                <div class="label-number">Pattern 2</div>
+                <div class="label-name">Long Press Context Menu</div>
+                <div class="label-desc">iOS 13+ style. Shows preview + all actions. Clean, comprehensive, no accidental taps.</div>
+            </div>
+        </div>
+
+        <!-- PATTERN 3: Detail View with Actions -->
+        <div class="phone-container">
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span></span>
+                        <span class="status-time">13:32</span>
+                        <span></span>
+                    </div>
+
+                    <div class="detail-header">
+                        <div class="detail-back">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M15 18l-6-6 6-6"/>
+                            </svg>
+                        </div>
+                        <div class="detail-title-area">
+                            <div class="detail-title">Invoice</div>
+                            <div class="detail-subtitle">WIF-INV-20251126-001</div>
+                        </div>
+                        <div class="detail-more">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1"/>
+                                <circle cx="12" cy="5" r="1"/>
+                                <circle cx="12" cy="19" r="1"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="detail-content">
+                        <div class="detail-amount-card">
+                            <div class="detail-amount-label">Total Amount</div>
+                            <div class="detail-amount-value">¥ 27,500.00</div>
+                            <div class="detail-amount-status">Issued</div>
+                        </div>
+
+                        <div class="detail-info-section">
+                            <div class="detail-info-row">
+                                <span class="detail-info-label">Customer</span>
+                                <span class="detail-info-value">Firdaus Ali</span>
+                            </div>
+                            <div class="detail-info-row">
+                                <span class="detail-info-label">Issue Date</span>
+                                <span class="detail-info-value">26 Nov 2025</span>
+                            </div>
+                            <div class="detail-info-row">
+                                <span class="detail-info-label">Due Date</span>
+                                <span class="detail-info-value">26 Dec 2025</span>
+                            </div>
+                            <div class="detail-info-row">
+                                <span class="detail-info-label">Currency</span>
+                                <span class="detail-info-value">JPY</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-action-bar">
+                        <button class="detail-action-btn share">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                                <polyline points="16,6 12,2 8,6"/>
+                                <line x1="12" y1="2" x2="12" y2="15"/>
+                            </svg>
+                            Share
+                        </button>
+                        <button class="detail-action-btn primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Edit
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="pattern-label">
+                <div class="label-number">Pattern 3</div>
+                <div class="label-name">Detail View + Action Bar</div>
+                <div class="label-desc">Tap opens detail. Share & Edit always visible. Delete in ⋮ menu (protected).</div>
+            </div>
+        </div>
+
+        <!-- PATTERN 4: Bottom Sheet -->
+        <div class="phone-container">
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span></span>
+                        <span class="status-time">13:32</span>
+                        <span></span>
+                    </div>
+
+                    <div class="screen-header">
+                        <h1 class="header-title">Documents</h1>
+                        <div class="header-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="bottom-sheet-overlay">
+                        <div class="bottom-sheet">
+                            <div class="bottom-sheet-handle"></div>
+                            <div class="bottom-sheet-header">
+                                <div class="bottom-sheet-title">Invoice — ARBA Hilmi Salleh</div>
+                                <div class="bottom-sheet-subtitle">WIF250170 · MYR 23,845.20</div>
+                            </div>
+                            <div class="bottom-sheet-actions">
+                                <div class="bottom-sheet-action">
+                                    <div class="bottom-sheet-action-icon view">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </div>
+                                    <div class="bottom-sheet-action-text">
+                                        <div class="bottom-sheet-action-title">View Details</div>
+                                        <div class="bottom-sheet-action-desc">See full invoice information</div>
+                                    </div>
+                                    <div class="bottom-sheet-action-arrow">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M9 18l6-6-6-6"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="bottom-sheet-action">
+                                    <div class="bottom-sheet-action-icon edit">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="bottom-sheet-action-text">
+                                        <div class="bottom-sheet-action-title">Edit Invoice</div>
+                                        <div class="bottom-sheet-action-desc">Modify details or line items</div>
+                                    </div>
+                                    <div class="bottom-sheet-action-arrow">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M9 18l6-6-6-6"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="bottom-sheet-action">
+                                    <div class="bottom-sheet-action-icon share">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                                            <polyline points="16,6 12,2 8,6"/>
+                                            <line x1="12" y1="2" x2="12" y2="15"/>
+                                        </svg>
+                                    </div>
+                                    <div class="bottom-sheet-action-text">
+                                        <div class="bottom-sheet-action-title">Share as PDF</div>
+                                        <div class="bottom-sheet-action-desc">Email, WhatsApp, or save</div>
+                                    </div>
+                                    <div class="bottom-sheet-action-arrow">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M9 18l6-6-6-6"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="bottom-sheet-action">
+                                    <div class="bottom-sheet-action-icon delete">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                        </svg>
+                                    </div>
+                                    <div class="bottom-sheet-action-text">
+                                        <div class="bottom-sheet-action-title delete">Delete Invoice</div>
+                                        <div class="bottom-sheet-action-desc">This cannot be undone</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bottom-sheet-cancel">Cancel</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pattern-label">
+                <div class="label-number">Pattern 4</div>
+                <div class="label-name">Bottom Action Sheet</div>
+                <div class="label-desc">Tap row → sheet slides up. All actions with descriptions. Delete at bottom (deliberate scroll).</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Recommendation -->
+    <div class="recommendation">
+        <h2>Recommendation for WIF Japan</h2>
+        
+        <div class="recommendation-grid">
+            <div class="rec-card">
+                <h4>
+                    Swipe Actions
+                    <span class="rec-badge quick">Quick</span>
+                </h4>
+                <p>Best for power users who need fast access. Swipe left → Edit/Delete. Swipe right → Share. Add a subtle hint on first use.</p>
+            </div>
+            <div class="rec-card">
+                <h4>
+                    Tap → Detail View
+                    <span class="rec-badge primary">Primary</span>
+                </h4>
+                <p>Tap the row to open detail view with full information. Share & Edit buttons visible in action bar. Delete in ⋮ menu.</p>
+            </div>
+            <div class="rec-card">
+                <h4>
+                    Delete Confirmation
+                    <span class="rec-badge safe">Required</span>
+                </h4>
+                <p>Always show confirmation dialog: "Delete Invoice WIF250170? This cannot be undone." with Cancel and Delete buttons.</p>
+            </div>
+        </div>
+
+        <div class="final-rec">
+            <h4>Recommended Combination</h4>
+            <p>
+                <strong>Use Pattern 1 (Swipe) + Pattern 3 (Detail View):</strong><br><br>
+                • <strong>Tap</strong> → Opens detail view with Share & Edit in action bar<br>
+                • <strong>Swipe left</strong> → Reveals Edit + Delete (quick access)<br>
+                • <strong>Swipe right</strong> → Reveals Share<br>
+                • <strong>Long press</strong> → Optional: iOS context menu as fallback<br>
+                • <strong>Delete always</strong> → Requires confirmation dialog
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

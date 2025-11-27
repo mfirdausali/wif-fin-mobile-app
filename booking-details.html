@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIF Japan — Booking Details</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* WIF Japan Design System */
+            --sumi-ink: #1A1815;
+            --sumi-ink-light: #2D2A26;
+            
+            --shu-vermillion: #C75B4A;
+            --shu-vermillion-soft: rgba(199, 91, 74, 0.1);
+            
+            --kin-gold: #B8963F;
+            --kin-gold-soft: rgba(184, 150, 63, 0.12);
+            --kin-gold-glow: rgba(184, 150, 63, 0.15);
+            
+            --ai-indigo: #4A5A7A;
+            --ai-indigo-soft: rgba(74, 90, 122, 0.1);
+            
+            --midori-jade: #4A7A5A;
+            --midori-jade-soft: rgba(74, 122, 90, 0.1);
+            
+            /* Backgrounds */
+            --bg-primary: #FAF8F5;
+            --bg-secondary: #F3F0EB;
+            --bg-card: #FFFFFF;
+            --bg-section: #F7F5F2;
+            
+            /* Text */
+            --text-primary: #1A1815;
+            --text-secondary: #5C5650;
+            --text-muted: #8C8680;
+            --text-faint: #B5B0A8;
+            --text-inverse: #FFFFFF;
+            
+            /* Borders */
+            --border-subtle: rgba(26, 24, 21, 0.08);
+            --border-medium: rgba(26, 24, 21, 0.12);
+            
+            /* Shadows */
+            --shadow-card: 0 4px 12px rgba(26, 24, 21, 0.08), 0 2px 4px rgba(26, 24, 21, 0.04);
+            --shadow-float: 0 8px 24px rgba(26, 24, 21, 0.12), 0 4px 8px rgba(26, 24, 21, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+            background: linear-gradient(145deg, #E8E4DE 0%, #D5D0C8 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .screens-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Phone Frame */
+        .phone-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: linear-gradient(145deg, #2A2A2A 0%, #1A1A1A 100%);
+            border-radius: 55px;
+            padding: 12px;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.3);
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-secondary);
+            border-radius: 44px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 50px;
+            padding: 0 24px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 6px;
+            background: var(--sumi-ink);
+        }
+
+        .status-bar .time {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-inverse);
+        }
+
+        /* Header - Dark Ink with Gold Glow */
+        .header {
+            background: linear-gradient(135deg, var(--sumi-ink) 0%, var(--sumi-ink-light) 100%);
+            padding: 0 16px 24px;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at top right, var(--kin-gold-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .back-btn span {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .header-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-inverse);
+            text-align: center;
+            flex: 1;
+            letter-spacing: 0.02em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-action {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            cursor: pointer;
+        }
+
+        .header-action svg {
+            width: 18px;
+            height: 18px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Floating Booking Card */
+        .booking-card {
+            background: var(--bg-card);
+            margin: -16px 16px 0;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: var(--shadow-float);
+            position: relative;
+            z-index: 10;
+        }
+
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .booking-id-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .booking-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--kin-gold);
+        }
+
+        .booking-id {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .status-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .status-badge.draft {
+            background: var(--ai-indigo-soft);
+            color: var(--ai-indigo);
+        }
+
+        .status-badge.confirmed {
+            background: var(--midori-jade-soft);
+            color: var(--midori-jade);
+        }
+
+        .status-badge.cancelled {
+            background: var(--shu-vermillion-soft);
+            color: var(--shu-vermillion);
+        }
+
+        .customer-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 26px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            letter-spacing: -0.01em;
+        }
+
+        .booking-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .meta-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .meta-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
+        }
+
+        .meta-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .booking-divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 14px 0;
+        }
+
+        .contact-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .contact-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--kin-gold-soft);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--kin-gold);
+        }
+
+        .contact-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Content */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Section Card */
+        .section {
+            background: var(--bg-card);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: var(--bg-section);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .section-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-icon.gold {
+            background: var(--kin-gold-soft);
+        }
+
+        .section-icon.gold svg {
+            color: var(--kin-gold);
+        }
+
+        .section-icon svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Cost Table */
+        .cost-table {
+            width: 100%;
+        }
+
+        .cost-table-header {
+            display: grid;
+            grid-template-columns: 1fr 90px 90px;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-section);
+            border-bottom: 1px solid var(--border-medium);
+        }
+
+        .cost-table-header span {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .cost-table-header span:nth-child(2),
+        .cost-table-header span:nth-child(3) {
+            text-align: right;
+        }
+
+        .cost-row {
+            display: grid;
+            grid-template-columns: 1fr 90px 90px;
+            gap: 8px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            align-items: start;
+        }
+
+        .cost-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .cost-category {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .cost-description {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .cost-wif {
+            text-align: right;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .cost-b2b {
+            text-align: right;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--kin-gold);
+        }
+
+        /* Total Row - Gold Highlight */
+        .total-row {
+            display: grid;
+            grid-template-columns: 1fr 90px 90px;
+            gap: 8px;
+            padding: 16px;
+            background: var(--kin-gold-soft);
+            border-top: 2px solid var(--kin-gold);
+        }
+
+        .total-label {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .total-wif {
+            text-align: right;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .total-b2b {
+            text-align: right;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--kin-gold);
+        }
+
+        /* Profit Row */
+        .profit-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 14px 16px;
+            background: var(--midori-jade-soft);
+            border-top: 1px solid var(--midori-jade);
+        }
+
+        .profit-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--midori-jade);
+        }
+
+        .profit-value {
+            text-align: right;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--midori-jade);
+        }
+
+        /* Action Bar */
+        .action-bar {
+            padding: 16px;
+            padding-bottom: 32px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn.secondary {
+            flex: 1;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            border: 1.5px solid var(--border-medium);
+        }
+
+        .btn.primary {
+            flex: 2;
+            background: var(--sumi-ink);
+            color: var(--text-inverse);
+        }
+
+        .btn.danger {
+            width: 100%;
+            background: var(--bg-primary);
+            color: var(--shu-vermillion);
+            border: 1.5px solid var(--shu-vermillion-soft);
+        }
+
+        .btn.danger:hover {
+            background: var(--shu-vermillion-soft);
+        }
+
+        /* Labels */
+        .screen-label {
+            text-align: center;
+            margin-top: 1.25rem;
+        }
+
+        .label-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .label-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            max-width: 280px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Booking Details — WIF Japan</h1>
+    <p class="subtitle">Complete booking view with cost breakdown and actions</p>
+
+    <div class="screens-container">
+
+        <!-- Screen 1: Top Section -->
+        <div class="phone-container">
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span class="time">15:08</span>
+                    </div>
+
+                    <!-- Dark Header with Gold Glow -->
+                    <div class="header">
+                        <div class="header-nav">
+                            <button class="back-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15 18l-6-6 6-6"/>
+                                </svg>
+                                <span>Back</span>
+                            </button>
+                            <span class="header-title">Booking Details</span>
+                            <div class="header-actions">
+                                <button class="header-action">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="18" cy="5" r="3"/>
+                                        <circle cx="6" cy="12" r="3"/>
+                                        <circle cx="18" cy="19" r="3"/>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                    </svg>
+                                </button>
+                                <button class="header-action">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="1"/>
+                                        <circle cx="12" cy="5" r="1"/>
+                                        <circle cx="12" cy="19" r="1"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating Booking Card -->
+                    <div class="booking-card">
+                        <div class="booking-header">
+                            <div>
+                                <div class="booking-id-row">
+                                    <svg class="booking-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+                                    </svg>
+                                    <span class="booking-id">BK-2025-001</span>
+                                </div>
+                                <div class="customer-name">Hilmi Salleh</div>
+                            </div>
+                            <div class="status-badge draft">
+                                <span class="dot"></span>
+                                Draft
+                            </div>
+                        </div>
+
+                        <div class="booking-meta">
+                            <div class="meta-row">
+                                <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                                </svg>
+                                <span class="meta-text">27 December 2025 – 31 December 2025</span>
+                            </div>
+                            <div class="meta-row">
+                                <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                                </svg>
+                                <span class="meta-text">11 pax</span>
+                            </div>
+                        </div>
+
+                        <div class="booking-divider"></div>
+
+                        <div class="contact-row">
+                            <div class="contact-avatar">HS</div>
+                            <span class="contact-name">Hilmi Salleh</span>
+                        </div>
+                    </div>
+
+                    <div class="content">
+                        <!-- Cost Breakdown Section -->
+                        <div class="section">
+                            <div class="section-header">
+                                <div class="section-icon gold">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="1" x2="12" y2="23"/>
+                                        <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                                    </svg>
+                                </div>
+                                <span class="section-title">Cost Breakdown</span>
+                            </div>
+
+                            <div class="cost-table">
+                                <div class="cost-table-header">
+                                    <span>Category</span>
+                                    <span>WIF Cost</span>
+                                    <span>B2B Price</span>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Transportation</div>
+                                        <div class="cost-description">27/12 - Coaster Osaka Airport (KIX) - Osaka Castle Park - Namba - Dotonbori</div>
+                                    </div>
+                                    <div class="cost-wif">RM 160,000</div>
+                                    <div class="cost-b2b">RM 200,000</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Transportation</div>
+                                        <div class="cost-description">28/12 - 14 Seater Osaka Apt - Nara Deer Park - Arashiyama</div>
+                                    </div>
+                                    <div class="cost-wif">RM 70,000</div>
+                                    <div class="cost-b2b">RM 80,000</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Transportation</div>
+                                        <div class="cost-description">29/12 - 14 Seater Kuromon Market - Shinsekai</div>
+                                    </div>
+                                    <div class="cost-wif">RM 45,000</div>
+                                    <div class="cost-b2b">RM 50,000</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Meals</div>
+                                        <div class="cost-description">Breakfast 4×10</div>
+                                    </div>
+                                    <div class="cost-wif">RM 60,000</div>
+                                    <div class="cost-b2b">RM 60,000</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="screen-label">
+                <div class="label-name">Screen 1: Header + Booking Card</div>
+                <div class="label-desc">Dark header, floating card with status badge</div>
+            </div>
+        </div>
+
+        <!-- Screen 2: More Cost Items -->
+        <div class="phone-container">
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span class="time">15:08</span>
+                    </div>
+
+                    <div class="header">
+                        <div class="header-nav">
+                            <button class="back-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15 18l-6-6 6-6"/>
+                                </svg>
+                                <span>Back</span>
+                            </button>
+                            <span class="header-title">Booking Details</span>
+                            <div class="header-actions">
+                                <button class="header-action">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="18" cy="5" r="3"/>
+                                        <circle cx="6" cy="12" r="3"/>
+                                        <circle cx="18" cy="19" r="3"/>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                    </svg>
+                                </button>
+                                <button class="header-action">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="1"/>
+                                        <circle cx="12" cy="5" r="1"/>
+                                        <circle cx="12" cy="19" r="1"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content" style="padding-top: 8px;">
+                        <div class="section">
+                            <div class="cost-table">
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Meals</div>
+                                        <div class="cost-description">Lunch 3×10</div>
+                                    </div>
+                                    <div class="cost-wif">RM 60,000</div>
+                                    <div class="cost-b2b">RM 60,000</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Meals</div>
+                                        <div class="cost-description">Dinner 3×10</div>
+                                    </div>
+                                    <div class="cost-wif">RM 60,000</div>
+                                    <div class="cost-b2b">RM 60,000</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Entrance Fees</div>
+                                        <div class="cost-description">Osaka Wonder Cruise (Adult)</div>
+                                    </div>
+                                    <div class="cost-wif">RM 16,000</div>
+                                    <div class="cost-b2b">RM 16,000</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Entrance Fees</div>
+                                        <div class="cost-description">Osaka Castle (Adult)</div>
+                                    </div>
+                                    <div class="cost-wif">RM 10,800</div>
+                                    <div class="cost-b2b">RM 10,800</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Tour Guide</div>
+                                        <div class="cost-description">TG Accommodation 18-29 Dec</div>
+                                    </div>
+                                    <div class="cost-wif">RM 25,000</div>
+                                    <div class="cost-b2b">RM 25,000</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Tour Guide</div>
+                                        <div class="cost-description">Manage Tour Group</div>
+                                    </div>
+                                    <div class="cost-wif">RM 0</div>
+                                    <div class="cost-b2b">RM 60,000</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="screen-label">
+                <div class="label-name">Screen 2: Cost Items</div>
+                <div class="label-desc">B2B Price in gold, WIF Cost in muted</div>
+            </div>
+        </div>
+
+        <!-- Screen 3: Totals + Actions -->
+        <div class="phone-container">
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span class="time">15:08</span>
+                    </div>
+
+                    <div class="header">
+                        <div class="header-nav">
+                            <button class="back-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15 18l-6-6 6-6"/>
+                                </svg>
+                                <span>Back</span>
+                            </button>
+                            <span class="header-title">Booking Details</span>
+                            <div class="header-actions">
+                                <button class="header-action">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="18" cy="5" r="3"/>
+                                        <circle cx="6" cy="12" r="3"/>
+                                        <circle cx="18" cy="19" r="3"/>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                    </svg>
+                                </button>
+                                <button class="header-action">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="1"/>
+                                        <circle cx="12" cy="5" r="1"/>
+                                        <circle cx="12" cy="19" r="1"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content" style="padding-top: 8px;">
+                        <div class="section">
+                            <div class="cost-table">
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Tour Guide</div>
+                                        <div class="cost-description">TG Meals</div>
+                                    </div>
+                                    <div class="cost-wif">RM 7,500</div>
+                                    <div class="cost-b2b">RM 7,500</div>
+                                </div>
+
+                                <div class="cost-row">
+                                    <div>
+                                        <div class="cost-category">Tour Guide</div>
+                                        <div class="cost-description">Manage Tour Group</div>
+                                    </div>
+                                    <div class="cost-wif">RM 0</div>
+                                    <div class="cost-b2b">RM 60,000</div>
+                                </div>
+                            </div>
+
+                            <!-- Total Row with Gold Highlight -->
+                            <div class="total-row">
+                                <div class="total-label">Total</div>
+                                <div class="total-wif">RM 16,255.20</div>
+                                <div class="total-b2b">RM 19,999.20</div>
+                            </div>
+
+                            <!-- Profit Row with Jade Highlight -->
+                            <div class="profit-row">
+                                <div class="profit-label">Estimated Profit</div>
+                                <div class="profit-value">+ RM 3,744.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="action-bar">
+                        <div class="action-row">
+                            <button class="btn secondary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Edit
+                            </button>
+                            <button class="btn primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="4" y="3" width="16" height="18" rx="2"/>
+                                    <path d="M8 7h8M8 11h8M8 15h4"/>
+                                </svg>
+                                Create Invoice
+                            </button>
+                        </div>
+                        <button class="btn danger">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3,6 5,6 21,6"/>
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                <line x1="10" y1="11" x2="10" y2="17"/>
+                                <line x1="14" y1="11" x2="14" y2="17"/>
+                            </svg>
+                            Delete Booking
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="screen-label">
+                <div class="label-name">Screen 3: Total + Actions</div>
+                <div class="label-desc">Gold total row, jade profit, proper action buttons</div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
