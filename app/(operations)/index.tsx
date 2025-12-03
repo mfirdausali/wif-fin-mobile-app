@@ -157,7 +157,7 @@ export default function OperationsDashboardScreen() {
             onPress={navigateToVouchers}
           >
             <View style={styles.quickActionIcon}>
-              <FileText size={28} color={theme.jade} />
+              <FileText size={28} color={appTheme.jade} />
             </View>
             <Text style={styles.quickActionTitle}>Payment Vouchers</Text>
             <Text style={styles.quickActionCount}>{stats.vouchers.total} total</Text>
@@ -168,7 +168,7 @@ export default function OperationsDashboardScreen() {
             onPress={navigateToBookings}
           >
             <View style={styles.quickActionIcon}>
-              <Plane size={28} color={theme.indigo} />
+              <Plane size={28} color={appTheme.indigo} />
             </View>
             <Text style={styles.quickActionTitle}>Bookings</Text>
             <Text style={styles.quickActionCount}>{stats.bookings.total} total</Text>
@@ -184,11 +184,11 @@ export default function OperationsDashboardScreen() {
               <Text style={styles.statLabel}>Draft</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: theme.indigo }]}>{stats.vouchers.pending}</Text>
+              <Text style={[styles.statValue, { color: appTheme.indigo }]}>{stats.vouchers.pending}</Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: theme.positive }]}>{stats.vouchers.completed}</Text>
+              <Text style={[styles.statValue, { color: appTheme.positive }]}>{stats.vouchers.completed}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
           </View>
@@ -203,11 +203,11 @@ export default function OperationsDashboardScreen() {
               <Text style={styles.statLabel}>Draft</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: theme.indigo }]}>{stats.bookings.confirmed}</Text>
+              <Text style={[styles.statValue, { color: appTheme.indigo }]}>{stats.bookings.confirmed}</Text>
               <Text style={styles.statLabel}>Confirmed</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: theme.positive }]}>{stats.bookings.completed}</Text>
+              <Text style={[styles.statValue, { color: appTheme.positive }]}>{stats.bookings.completed}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
           </View>
