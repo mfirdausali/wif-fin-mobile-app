@@ -104,6 +104,8 @@ export interface PaymentVoucher extends BaseDocument {
   approvalDate?: string
   paymentDueDate?: string
   purpose?: string
+  supportingDocStoragePath?: string
+  supportingDocFilename?: string
 }
 
 /**
@@ -118,6 +120,7 @@ export interface StatementOfPayment extends BaseDocument {
   transactionReference: string
   transferProofFilename?: string
   transferProofBase64?: string
+  transferProofStoragePath?: string
   confirmedBy: string
   payeeName: string
   items: LineItem[]

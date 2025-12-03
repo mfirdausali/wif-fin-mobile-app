@@ -810,6 +810,7 @@ async function createStatementOfPayment(documentId: string, statement: Statement
     transaction_reference: statement.transactionReference,
     transfer_proof_filename: statement.transferProofFilename || null,
     transfer_proof_base64: statement.transferProofBase64 || null,
+    transfer_proof_storage_path: statement.transferProofStoragePath || null,
     confirmed_by: statement.confirmedBy,
     payee_name: statement.payeeName,
     transaction_fee: statement.transactionFee || 0,
@@ -894,6 +895,8 @@ async function updateStatementOfPayment(documentId: string, updates: Partial<Sta
   if (updates.transactionFee !== undefined) updateData.transaction_fee = updates.transactionFee
   if (updates.transactionFeeType !== undefined) updateData.transaction_fee_type = updates.transactionFeeType
   if (updates.totalDeducted !== undefined) updateData.total_deducted = updates.totalDeducted
+  if (updates.transferProofFilename !== undefined) updateData.transfer_proof_filename = updates.transferProofFilename
+  if (updates.transferProofStoragePath !== undefined) updateData.transfer_proof_storage_path = updates.transferProofStoragePath
 
   if (Object.keys(updateData).length > 0) {
     const { error } = await supabase
@@ -1223,6 +1226,7 @@ async function getStatementOfPaymentData(doc: any, items: any[]): Promise<Statem
     transactionReference: statementData.transaction_reference,
     transferProofFilename: statementData.transfer_proof_filename || undefined,
     transferProofBase64: statementData.transfer_proof_base64 || undefined,
+    transferProofStoragePath: statementData.transfer_proof_storage_path || undefined,
     confirmedBy: statementData.confirmed_by,
     payeeName: statementData.payee_name,
     transactionFee: statementData.transaction_fee || 0,

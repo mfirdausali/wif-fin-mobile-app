@@ -1,12 +1,15 @@
-import { useState, memo } from 'react'
+import { useState, memo, useEffect } from 'react'
 import { YStack, XStack, Text, ScrollView } from 'tamagui'
-import { Calendar, FileText, Link } from '@tamagui/lucide-icons'
-import { Pressable, StyleSheet, View, Platform, Modal } from 'react-native'
+import { Calendar, FileText, Link, Upload, X, Camera, File } from '@tamagui/lucide-icons'
+import { Pressable, StyleSheet, View, Platform, Modal, Image, Alert } from 'react-native'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
+import * as ImagePicker from 'expo-image-picker'
+import * as DocumentPicker from 'expo-document-picker'
 import * as Haptics from 'expo-haptics'
 
 import { Input, Button, Card } from '../ui'
 import type { StatementOfPayment } from '../../types'
+import { uploadFile, deleteFile, getPublicUrl } from '../../services/storage/storageService'
 
 // Section Header Component
 const SectionHeader = memo(({
@@ -123,9 +126,28 @@ export function StatementOfPaymentEditForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Transfer proof state
+  const [transferProofUri, setTransferProofUri] = useState<string>('')
+  const [transferProofFilename, setTransferProofFilename] = useState<string>(
+    document.transferProofFilename || ''
+  )
+  const [transferProofStoragePath, setTransferProofStoragePath] = useState<string>(
+    document.transferProofStoragePath || ''
+  )
+  const [isUploadingFile, setIsUploadingFile] = useState(false)
+
   // Use indigo colors for linked voucher section, fallback to gold if not provided
   const indigoColor = theme.indigo || '#4A5A7A'
   const indigoSoftColor = theme.indigoSoft || 'rgba(74, 90, 122, 0.1)'
+
+  // Load existing transfer proof on mount
+  useEffect(() => {
+    if (document.transferProofStoragePath && !transferProofUri) {
+      // Get public URL from storage path
+      const url = getPublicUrl(document.transferProofStoragePath)
+      setTransferProofUri(url)
+    }
+  }, [document.transferProofStoragePath])
 
   const calculateTotalDeducted = () => {
     const transactionFee = parseFloat(formData.transactionFee) || 0
@@ -139,6 +161,60 @@ export function StatementOfPaymentEditForm({
     if (selectedDate) {
       setFormData({ ...formData, paymentDate: selectedDate.toISOString().split('T')[0] })
     }
+  }
+
+  const handlePickFromFiles = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*', 'application/pdf'],
+        copyToCacheDirectory: true,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0]
+        setTransferProofUri(asset.uri)
+        setTransferProofFilename(asset.name)
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      }
+    } catch (error) {
+      console.error('Error picking document:', error)
+      Alert.alert('Error', 'Failed to pick file. Please try again.')
+    }
+  }
+
+  const handleTakePhoto = async () => {
+    try {
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera permissions to take a photo.')
+        return
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 0.8,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0]
+        const timestamp = Date.now()
+        const filename = `transfer_proof_${timestamp}.jpg`
+        setTransferProofUri(asset.uri)
+        setTransferProofFilename(filename)
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error)
+      Alert.alert('Error', 'Failed to take photo. Please try again.')
+    }
+  }
+
+  const handleRemoveFile = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+    setTransferProofUri('')
+    setTransferProofFilename('')
   }
 
   const validate = () => {
@@ -178,6 +254,38 @@ export function StatementOfPaymentEditForm({
       transactionFeeType: formData.transactionFeeType || undefined,
       totalDeducted,
       notes: formData.notes || undefined,
+    }
+
+    // Upload transfer proof if a new file was selected
+    if (transferProofUri && transferProofFilename) {
+      try {
+        setIsUploadingFile(true)
+
+        // Delete old file if it exists
+        if (transferProofStoragePath) {
+          try {
+            await deleteFile(transferProofStoragePath)
+          } catch (error) {
+            console.error('Error deleting old file:', error)
+            // Continue with upload even if deletion fails
+          }
+        }
+
+        // Upload new file
+        const timestamp = Date.now()
+        const storagePath = `statement_of_payment/${document.id}/${timestamp}_${transferProofFilename}`
+        const uploadResult = await uploadFile(transferProofUri, storagePath)
+
+        updates.transferProofFilename = transferProofFilename
+        updates.transferProofStoragePath = uploadResult.path
+
+        setIsUploadingFile(false)
+      } catch (error) {
+        setIsUploadingFile(false)
+        console.error('Error uploading file:', error)
+        Alert.alert('Upload Error', 'Failed to upload transfer proof. Please try again.')
+        return
+      }
     }
 
     await onSave(updates)
@@ -426,6 +534,77 @@ export function StatementOfPaymentEditForm({
             </FormField>
           </Card>
 
+          {/* Transfer Proof */}
+          <Card backgroundColor={theme.bgCard} padding="$5" borderRadius={16} style={styles.formCard}>
+            <SectionHeader title="Transfer Proof" theme={theme} />
+
+            {transferProofUri || transferProofStoragePath ? (
+              <YStack gap="$3">
+                {/* Preview */}
+                {transferProofUri && (
+                  <View style={styles.previewContainer}>
+                    <Image
+                      source={{ uri: transferProofUri }}
+                      style={styles.previewImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                )}
+                {!transferProofUri && transferProofStoragePath && (
+                  <View style={[styles.existingFileContainer, { backgroundColor: theme.goldSoft, borderColor: theme.gold }]}>
+                    <FileText size={24} color={theme.gold} />
+                    <Text fontSize={13} color={theme.textPrimary} fontWeight="500">
+                      {transferProofFilename || 'Transfer proof attached'}
+                    </Text>
+                  </View>
+                )}
+
+                {/* File info and remove button */}
+                <XStack alignItems="center" justifyContent="space-between" gap="$2">
+                  <Text fontSize={13} color={theme.textSecondary} numberOfLines={1} flex={1}>
+                    {transferProofFilename}
+                  </Text>
+                  <Pressable
+                    onPress={handleRemoveFile}
+                    style={[styles.removeButton, { backgroundColor: theme.vermillionSoft }]}
+                  >
+                    <X size={18} color={theme.vermillion} />
+                  </Pressable>
+                </XStack>
+              </YStack>
+            ) : (
+              <YStack gap="$2">
+                {/* Pick from Files button */}
+                <Pressable
+                  onPress={handlePickFromFiles}
+                  style={[styles.uploadButton, { borderColor: theme.borderMedium, backgroundColor: theme.bgSecondary }]}
+                >
+                  <File size={20} color={theme.textMuted} />
+                  <Text fontSize={14} fontWeight="500" color={theme.textPrimary}>
+                    Pick from Files
+                  </Text>
+                  <Text fontSize={12} color={theme.textMuted}>
+                    PDF, JPG, PNG supported
+                  </Text>
+                </Pressable>
+
+                {/* Take Photo button */}
+                <Pressable
+                  onPress={handleTakePhoto}
+                  style={[styles.uploadButton, { borderColor: theme.borderMedium, backgroundColor: theme.bgSecondary }]}
+                >
+                  <Camera size={20} color={theme.textMuted} />
+                  <Text fontSize={14} fontWeight="500" color={theme.textPrimary}>
+                    Take Photo
+                  </Text>
+                  <Text fontSize={12} color={theme.textMuted}>
+                    Use camera to capture transfer proof
+                  </Text>
+                </Pressable>
+              </YStack>
+            )}
+          </Card>
+
           {/* Notes */}
           <Card backgroundColor={theme.bgCard} padding="$5" borderRadius={16} style={styles.formCard}>
             <SectionHeader title="Notes" theme={theme} />
@@ -447,11 +626,11 @@ export function StatementOfPaymentEditForm({
         </Pressable>
         <Pressable
           onPress={handleSave}
-          disabled={isSaving}
-          style={[styles.saveButton, { backgroundColor: theme.gold, opacity: isSaving ? 0.6 : 1 }]}
+          disabled={isSaving || isUploadingFile}
+          style={[styles.saveButton, { backgroundColor: theme.gold, opacity: isSaving || isUploadingFile ? 0.6 : 1 }]}
         >
           <Text color="#FFFFFF" fontWeight="600" fontSize={14}>
-            {isSaving ? 'Saving...' : 'Save Changes'}
+            {isUploadingFile ? 'Uploading...' : isSaving ? 'Saving...' : 'Save Changes'}
           </Text>
         </Pressable>
       </View>
@@ -544,5 +723,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 10,
+  },
+  uploadButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  previewContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+  },
+  previewImage: {
+    width: '100%',
+    height: 200,
+  },
+  existingFileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  removeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

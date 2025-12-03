@@ -1,12 +1,24 @@
 import { useState, memo } from 'react'
 import { YStack, XStack, Text, ScrollView } from 'tamagui'
-import { Plus, Trash2, Calendar } from '@tamagui/lucide-icons'
-import { Pressable, StyleSheet, View, Platform, Modal } from 'react-native'
+import { Plus, Trash2, Calendar, Upload, FileText, Image as ImageIcon, Camera, X } from '@tamagui/lucide-icons'
+import { Pressable, StyleSheet, View, Platform, Modal, Image, Alert, ActivityIndicator } from 'react-native'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import * as Haptics from 'expo-haptics'
 
 import { Input, Button, Card } from '../ui'
 import type { PaymentVoucher, LineItem } from '../../types'
+import {
+  pickDocument,
+  pickImageFromGallery,
+  takePhoto,
+  uploadSupportingDocument,
+  deleteSupportingDocument,
+  getPublicUrl,
+  isImageFile,
+  isPdfFile,
+  formatFileSize,
+  type PickedFile,
+} from '../../services/storage/storageService'
 
 // Section Header Component
 const SectionHeader = memo(({
@@ -121,6 +133,23 @@ export function PaymentVoucherEditForm({
   const [items, setItems] = useState<LineItem[]>(document.items || [])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Supporting document state
+  const [selectedFile, setSelectedFile] = useState<PickedFile | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadedDoc, setUploadedDoc] = useState<{
+    storagePath: string
+    filename: string
+    url: string
+  } | null>(
+    document.supportingDocStoragePath && document.supportingDocFilename
+      ? {
+          storagePath: document.supportingDocStoragePath,
+          filename: document.supportingDocFilename,
+          url: getPublicUrl(document.supportingDocStoragePath),
+        }
+      : null
+  )
+
   const addItem = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setItems([
@@ -200,6 +229,116 @@ export function PaymentVoucherEditForm({
     }
   }
 
+  // File handling functions
+  const handlePickDocument = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      const file = await pickDocument()
+      if (file) {
+        setSelectedFile(file)
+      }
+    } catch (error) {
+      console.error('Error picking document:', error)
+      Alert.alert('Error', 'Failed to pick document. Please try again.')
+    }
+  }
+
+  const handlePickImage = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      const file = await pickImageFromGallery()
+      if (file) {
+        setSelectedFile(file)
+      }
+    } catch (error) {
+      console.error('Error picking image:', error)
+      Alert.alert('Error', 'Failed to pick image. Please try again.')
+    }
+  }
+
+  const handleTakePhoto = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      const file = await takePhoto()
+      if (file) {
+        setSelectedFile(file)
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error)
+      Alert.alert('Error', 'Failed to take photo. Please try again.')
+    }
+  }
+
+  const handleRemoveFile = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+    setSelectedFile(null)
+  }
+
+  const handleRemoveUploadedDoc = async () => {
+    if (!uploadedDoc) return
+
+    Alert.alert(
+      'Remove Document',
+      'Are you sure you want to remove this supporting document?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+              setUploadedDoc(null)
+            } catch (error) {
+              console.error('Error removing document:', error)
+              Alert.alert('Error', 'Failed to remove document. Please try again.')
+            }
+          },
+        },
+      ]
+    )
+  }
+
+  const uploadFileIfNeeded = async (): Promise<{
+    storagePath?: string
+    filename?: string
+  }> => {
+    // If there's a new file selected, upload it
+    if (selectedFile) {
+      setIsUploading(true)
+      try {
+        const result = await uploadSupportingDocument(selectedFile, document.id)
+        setIsUploading(false)
+        return {
+          storagePath: result.path,
+          filename: result.filename,
+        }
+      } catch (error) {
+        setIsUploading(false)
+        throw error
+      }
+    }
+
+    // If uploaded doc was removed
+    if (!uploadedDoc && document.supportingDocStoragePath) {
+      return {
+        storagePath: undefined,
+        filename: undefined,
+      }
+    }
+
+    // Keep existing uploaded doc
+    if (uploadedDoc) {
+      return {
+        storagePath: uploadedDoc.storagePath,
+        filename: uploadedDoc.filename,
+      }
+    }
+
+    // No changes
+    return {}
+  }
+
   const handleSave = async () => {
     if (!validate()) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
@@ -207,26 +346,37 @@ export function PaymentVoucherEditForm({
     }
 
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    const { subtotal, taxAmount, total } = calculateTotals()
 
-    const updates: Partial<PaymentVoucher> = {
-      payeeName: formData.payeeName,
-      payeeAddress: formData.payeeAddress || undefined,
-      payeeBankAccount: formData.payeeBankAccount || undefined,
-      payeeBankName: formData.payeeBankName || undefined,
-      voucherDate: formData.voucherDate,
-      paymentDueDate: formData.paymentDueDate || undefined,
-      requestedBy: formData.requestedBy,
-      items,
-      subtotal,
-      taxRate: parseFloat(formData.taxRate) || undefined,
-      taxAmount: taxAmount > 0 ? taxAmount : undefined,
-      total,
-      amount: total,
-      notes: formData.notes || undefined,
+    try {
+      // Upload file if needed
+      const fileData = await uploadFileIfNeeded()
+
+      const { subtotal, taxAmount, total } = calculateTotals()
+
+      const updates: Partial<PaymentVoucher> = {
+        payeeName: formData.payeeName,
+        payeeAddress: formData.payeeAddress || undefined,
+        payeeBankAccount: formData.payeeBankAccount || undefined,
+        payeeBankName: formData.payeeBankName || undefined,
+        voucherDate: formData.voucherDate,
+        paymentDueDate: formData.paymentDueDate || undefined,
+        requestedBy: formData.requestedBy,
+        items,
+        subtotal,
+        taxRate: parseFloat(formData.taxRate) || undefined,
+        taxAmount: taxAmount > 0 ? taxAmount : undefined,
+        total,
+        amount: total,
+        notes: formData.notes || undefined,
+        supportingDocStoragePath: fileData.storagePath,
+        supportingDocFilename: fileData.filename,
+      }
+
+      await onSave(updates)
+    } catch (error) {
+      console.error('Error saving voucher:', error)
+      Alert.alert('Error', 'Failed to save payment voucher. Please try again.')
     }
-
-    await onSave(updates)
   }
 
   const { subtotal, taxAmount, total } = calculateTotals()
@@ -500,6 +650,112 @@ export function PaymentVoucherEditForm({
             )}
           </Card>
 
+          {/* Supporting Document */}
+          <Card backgroundColor={theme.bgCard} padding="$5" borderRadius={16} style={styles.formCard}>
+            <SectionHeader title="Supporting Document" badge="Optional" theme={theme} />
+
+            {/* Show uploaded document */}
+            {uploadedDoc && !selectedFile && (
+              <View style={[styles.uploadedDocBox, { backgroundColor: theme.bgSecondary, borderColor: theme.borderSubtle }]}>
+                <XStack alignItems="center" gap="$3" flex={1}>
+                  <View style={[styles.fileIconBox, { backgroundColor: theme.goldSoft }]}>
+                    <FileText size={20} color={theme.gold} />
+                  </View>
+                  <YStack flex={1}>
+                    <Text fontSize={14} fontWeight="600" color={theme.textPrimary} numberOfLines={1}>
+                      {uploadedDoc.filename}
+                    </Text>
+                    <Text fontSize={12} color={theme.textMuted}>
+                      Uploaded
+                    </Text>
+                  </YStack>
+                  <Pressable onPress={handleRemoveUploadedDoc} hitSlop={8}>
+                    <X size={20} color={theme.vermillion} />
+                  </Pressable>
+                </XStack>
+              </View>
+            )}
+
+            {/* Show selected file preview */}
+            {selectedFile && (
+              <View style={[styles.uploadedDocBox, { backgroundColor: theme.goldSoft, borderColor: theme.gold }]}>
+                <XStack alignItems="center" gap="$3" flex={1}>
+                  {isImageFile(selectedFile.type) ? (
+                    <Image source={{ uri: selectedFile.uri }} style={styles.imageThumbnail} />
+                  ) : (
+                    <View style={[styles.fileIconBox, { backgroundColor: theme.gold }]}>
+                      <FileText size={20} color="#FFFFFF" />
+                    </View>
+                  )}
+                  <YStack flex={1}>
+                    <Text fontSize={14} fontWeight="600" color={theme.textPrimary} numberOfLines={1}>
+                      {selectedFile.name}
+                    </Text>
+                    <Text fontSize={12} color={theme.textMuted}>
+                      {formatFileSize(selectedFile.size)} • Ready to upload
+                    </Text>
+                  </YStack>
+                  <Pressable onPress={handleRemoveFile} hitSlop={8}>
+                    <X size={20} color={theme.vermillion} />
+                  </Pressable>
+                </XStack>
+              </View>
+            )}
+
+            {/* Upload buttons */}
+            {!selectedFile && !uploadedDoc && (
+              <YStack gap="$2">
+                <Pressable
+                  onPress={handlePickDocument}
+                  disabled={isUploading}
+                  style={[styles.uploadButton, { borderColor: theme.borderMedium, backgroundColor: theme.bgPrimary }]}
+                >
+                  <Upload size={18} color={theme.textPrimary} />
+                  <Text fontSize={14} fontWeight="500" color={theme.textPrimary}>
+                    Choose File (PDF or Image)
+                  </Text>
+                </Pressable>
+
+                <XStack gap="$2">
+                  <Pressable
+                    onPress={handlePickImage}
+                    disabled={isUploading}
+                    style={[styles.uploadButton, { flex: 1, borderColor: theme.borderMedium, backgroundColor: theme.bgPrimary }]}
+                  >
+                    <ImageIcon size={18} color={theme.textPrimary} />
+                    <Text fontSize={13} fontWeight="500" color={theme.textPrimary}>
+                      Gallery
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleTakePhoto}
+                    disabled={isUploading}
+                    style={[styles.uploadButton, { flex: 1, borderColor: theme.borderMedium, backgroundColor: theme.bgPrimary }]}
+                  >
+                    <Camera size={18} color={theme.textPrimary} />
+                    <Text fontSize={13} fontWeight="500" color={theme.textPrimary}>
+                      Camera
+                    </Text>
+                  </Pressable>
+                </XStack>
+              </YStack>
+            )}
+
+            {isUploading && (
+              <XStack alignItems="center" justifyContent="center" gap="$2" paddingVertical="$3">
+                <ActivityIndicator size="small" color={theme.gold} />
+                <Text fontSize={13} color={theme.textMuted}>
+                  Uploading...
+                </Text>
+              </XStack>
+            )}
+
+            <Text fontSize={12} color={theme.textMuted} marginTop="$3">
+              Attach invoices, receipts, or other supporting documents (Max 10MB)
+            </Text>
+          </Card>
+
           {/* Notes */}
           <Card backgroundColor={theme.bgCard} padding="$5" borderRadius={16} style={styles.formCard}>
             <SectionHeader title="Notes" theme={theme} />
@@ -623,6 +879,35 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 10,
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    borderStyle: 'dashed',
+  },
+  uploadedDocBox: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  fileIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageThumbnail: {
+    width: 44,
+    height: 44,
     borderRadius: 10,
   },
 })
