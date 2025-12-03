@@ -16,10 +16,15 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Plus, Plane, Users, MapPin, Calendar, ChevronRight } from '@tamagui/lucide-icons'
 import * as Haptics from 'expo-haptics'
+import {
+  useFonts,
+  CormorantGaramond_400Regular,
+  CormorantGaramond_500Medium,
+} from '@expo-google-fonts/cormorant-garamond'
 import { useAuthStore } from '../../src/store/authStore'
 import { useThemeStore } from '../../src/store/themeStore'
 import { getAppTheme } from '../../src/constants/theme'
@@ -42,9 +47,15 @@ interface Booking {
 
 export default function OperationsBookingsScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const user = useAuthStore((state) => state.user)
   const isDark = useThemeStore((state) => state.isDarkMode)
   const appTheme = getAppTheme(isDark)
+
+  const [fontsLoaded] = useFonts({
+    CormorantGaramond_400Regular,
+    CormorantGaramond_500Medium,
+  })
 
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -138,6 +149,10 @@ export default function OperationsBookingsScreen() {
 
   const styles = createStyles(appTheme, isDark)
 
+  if (!fontsLoaded) {
+    return <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]} />
+  }
+
   const renderBooking = ({ item }: { item: Booking }) => (
     <Pressable
       style={styles.bookingCard}
@@ -193,25 +208,19 @@ export default function OperationsBookingsScreen() {
           </Text>
         </View>
       </View>
-
-      <View style={styles.cardFooter}>
-        <Text style={styles.viewDetails}>View Details</Text>
-        <ChevronRight size={16} color={appTheme.textMuted} />
-      </View>
     </Pressable>
   )
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.headerTitle}>Bookings</Text>
         <Pressable
           style={styles.addButton}
           onPress={handleCreateBooking}
         >
-          <Plus size={20} color="#fff" />
-          <Text style={styles.addButtonText}>New</Text>
+          <Plus size={20} color={appTheme.textPrimary} />
         </Pressable>
       </View>
 
@@ -241,15 +250,19 @@ export default function OperationsBookingsScreen() {
             data={bookings}
             keyExtractor={(item) => item.id}
             renderItem={renderBooking}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={appTheme.gold}
+              />
             }
             showsVerticalScrollIndicator={false}
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -257,43 +270,35 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.jade,
+      backgroundColor: theme.bgPrimary,
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingHorizontal: 24,
+      paddingBottom: 20,
     },
     headerTitle: {
+      fontFamily: 'CormorantGaramond_500Medium',
       fontSize: 24,
-      fontWeight: '700',
-      color: '#fff',
+      color: theme.textPrimary,
     },
     addButton: {
-      flexDirection: 'row',
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      backgroundColor: theme.bgCard,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      justifyContent: 'center',
       alignItems: 'center',
-      gap: 6,
-      backgroundColor: 'rgba(255,255,255,0.2)',
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 20,
-    },
-    addButtonText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#fff',
     },
     content: {
       flex: 1,
-      backgroundColor: theme.bgPrimary,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
     },
     listContent: {
-      padding: 16,
-      paddingBottom: 40,
+      padding: 24,
     },
     loadingContainer: {
       flex: 1,
@@ -322,7 +327,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      backgroundColor: theme.jade,
+      backgroundColor: theme.textPrimary,
       paddingHorizontal: 20,
       paddingVertical: 12,
       borderRadius: 12,
@@ -335,22 +340,11 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     },
     bookingCard: {
       backgroundColor: theme.bgCard,
-      borderRadius: 16,
+      borderRadius: 14,
       padding: 16,
       marginBottom: 12,
-      borderLeftWidth: 4,
-      borderLeftColor: theme.indigo,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
     },
     bookingHeader: {
       flexDirection: 'row',
@@ -422,16 +416,5 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       fontWeight: '600',
       color: theme.textPrimary,
       marginTop: 2,
-    },
-    cardFooter: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      marginTop: 12,
-    },
-    viewDetails: {
-      fontSize: 13,
-      color: theme.textMuted,
-      marginRight: 4,
     },
   })
