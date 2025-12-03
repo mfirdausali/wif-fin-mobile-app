@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router'
+import { Tabs, Redirect } from 'expo-router'
 import { Platform } from 'react-native'
 import {
   Home,
@@ -10,10 +10,17 @@ import {
 import * as Haptics from 'expo-haptics'
 import { getAppTheme } from '../../src/constants/theme'
 import { useThemeStore } from '../../src/store/themeStore'
+import { useAuthStore } from '../../src/store/authStore'
 
 export default function TabsLayout() {
   const isDark = useThemeStore((state) => state.isDarkMode)
   const appTheme = getAppTheme(isDark)
+  const user = useAuthStore((state) => state.user)
+
+  // Guard: Operations users should be in (operations) tab group
+  if (user?.role === 'operations') {
+    return <Redirect href="/(operations)" />
+  }
 
   const handleTabPress = () => {
     if (Platform.OS === 'ios') {
