@@ -108,19 +108,19 @@ export default function OperationsBookingsScreen() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
-        return '#6b7280'
+        return appTheme.textMuted
       case 'planning':
-        return '#f59e0b'
+        return appTheme.pending
       case 'confirmed':
-        return '#3b82f6'
+        return appTheme.indigo
       case 'in_progress':
-        return '#8b5cf6'
+        return appTheme.indigo
       case 'completed':
-        return '#10b981'
+        return appTheme.positive
       case 'cancelled':
-        return '#ef4444'
+        return appTheme.negative
       default:
-        return '#6b7280'
+        return appTheme.textMuted
     }
   }
 
@@ -145,7 +145,7 @@ export default function OperationsBookingsScreen() {
     >
       <View style={styles.bookingHeader}>
         <View style={styles.bookingIcon}>
-          <Plane size={20} color="#0891b2" />
+          <Plane size={20} color={appTheme.indigo} />
         </View>
         <View style={styles.bookingInfo}>
           <Text style={styles.guestName}>{item.guestName}</Text>
@@ -188,7 +188,7 @@ export default function OperationsBookingsScreen() {
         </View>
         <View style={styles.priceItem}>
           <Text style={styles.priceLabel}>Profit</Text>
-          <Text style={[styles.priceValue, { color: item.profitMyr >= 0 ? '#10b981' : '#ef4444' }]}>
+          <Text style={[styles.priceValue, { color: item.profitMyr >= 0 ? appTheme.positive : appTheme.negative }]}>
             {formatCurrency(item.profitMyr, 'MYR')}
           </Text>
         </View>
@@ -219,7 +219,7 @@ export default function OperationsBookingsScreen() {
       <View style={styles.content}>
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#059669" />
+            <ActivityIndicator size="large" color={appTheme.jade} />
           </View>
         ) : bookings.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -257,7 +257,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#059669',
+      backgroundColor: theme.jade,
     },
     header: {
       flexDirection: 'row',
@@ -309,7 +309,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     emptyTitle: {
       fontSize: 20,
       fontWeight: '600',
-      color: theme.text,
+      color: theme.textPrimary,
       marginTop: 16,
     },
     emptySubtitle: {
@@ -322,7 +322,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      backgroundColor: '#059669',
+      backgroundColor: theme.jade,
       paddingHorizontal: 20,
       paddingVertical: 12,
       borderRadius: 12,
@@ -339,7 +339,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       padding: 16,
       marginBottom: 12,
       borderLeftWidth: 4,
-      borderLeftColor: '#0891b2',
+      borderLeftColor: theme.indigo,
       ...Platform.select({
         ios: {
           shadowColor: '#000',
@@ -361,7 +361,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       width: 40,
       height: 40,
       borderRadius: 10,
-      backgroundColor: '#0891b220',
+      backgroundColor: theme.indigoSoft,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 12,
@@ -372,7 +372,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     guestName: {
       fontSize: 16,
       fontWeight: '600',
-      color: theme.text,
+      color: theme.textPrimary,
     },
     bookingCode: {
       fontSize: 13,
@@ -408,7 +408,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       justifyContent: 'space-between',
       paddingTop: 12,
       borderTopWidth: 1,
-      borderTopColor: theme.border,
+      borderTopColor: theme.borderSubtle,
     },
     priceItem: {
       alignItems: 'center',
@@ -420,7 +420,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     priceValue: {
       fontSize: 14,
       fontWeight: '600',
-      color: theme.text,
+      color: theme.textPrimary,
       marginTop: 2,
     },
     cardFooter: {

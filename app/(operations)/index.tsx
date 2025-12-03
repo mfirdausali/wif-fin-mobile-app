@@ -74,7 +74,7 @@ export default function OperationsDashboardScreen() {
       const voucherStats = {
         total: vouchers?.length || 0,
         draft: vouchers?.filter(v => v.status === 'draft').length || 0,
-        pending: vouchers?.filter(v => v.status === 'pending').length || 0,
+        pending: vouchers?.filter(v => v.status === 'issued').length || 0, // 'issued' is the pending state
         completed: vouchers?.filter(v => v.status === 'completed').length || 0,
       }
 
@@ -157,7 +157,7 @@ export default function OperationsDashboardScreen() {
             onPress={navigateToVouchers}
           >
             <View style={styles.quickActionIcon}>
-              <FileText size={28} color="#059669" />
+              <FileText size={28} color={theme.jade} />
             </View>
             <Text style={styles.quickActionTitle}>Payment Vouchers</Text>
             <Text style={styles.quickActionCount}>{stats.vouchers.total} total</Text>
@@ -168,7 +168,7 @@ export default function OperationsDashboardScreen() {
             onPress={navigateToBookings}
           >
             <View style={styles.quickActionIcon}>
-              <Plane size={28} color="#0891b2" />
+              <Plane size={28} color={theme.indigo} />
             </View>
             <Text style={styles.quickActionTitle}>Bookings</Text>
             <Text style={styles.quickActionCount}>{stats.bookings.total} total</Text>
@@ -184,11 +184,11 @@ export default function OperationsDashboardScreen() {
               <Text style={styles.statLabel}>Draft</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: '#f59e0b' }]}>{stats.vouchers.pending}</Text>
+              <Text style={[styles.statValue, { color: theme.indigo }]}>{stats.vouchers.pending}</Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: '#10b981' }]}>{stats.vouchers.completed}</Text>
+              <Text style={[styles.statValue, { color: theme.positive }]}>{stats.vouchers.completed}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
           </View>
@@ -203,11 +203,11 @@ export default function OperationsDashboardScreen() {
               <Text style={styles.statLabel}>Draft</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: '#3b82f6' }]}>{stats.bookings.confirmed}</Text>
+              <Text style={[styles.statValue, { color: theme.indigo }]}>{stats.bookings.confirmed}</Text>
               <Text style={styles.statLabel}>Confirmed</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: '#10b981' }]}>{stats.bookings.completed}</Text>
+              <Text style={[styles.statValue, { color: theme.positive }]}>{stats.bookings.completed}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
           </View>
@@ -221,7 +221,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#059669', // emerald-600
+      backgroundColor: theme.jade,
     },
     header: {
       flexDirection: 'row',
@@ -229,7 +229,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       alignItems: 'center',
       paddingHorizontal: 20,
       paddingVertical: 16,
-      backgroundColor: '#059669',
+      backgroundColor: theme.jade,
     },
     headerTitle: {
       fontSize: 24,
@@ -299,11 +299,11 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     },
     voucherCard: {
       borderLeftWidth: 4,
-      borderLeftColor: '#059669',
+      borderLeftColor: theme.jade,
     },
     bookingCard: {
       borderLeftWidth: 4,
-      borderLeftColor: '#0891b2',
+      borderLeftColor: theme.indigo,
     },
     quickActionIcon: {
       marginBottom: 12,
@@ -311,7 +311,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     quickActionTitle: {
       fontSize: 16,
       fontWeight: '600',
-      color: theme.text,
+      color: theme.textPrimary,
       marginBottom: 4,
     },
     quickActionCount: {
@@ -324,7 +324,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     sectionTitle: {
       fontSize: 18,
       fontWeight: '600',
-      color: theme.text,
+      color: theme.textPrimary,
       marginBottom: 12,
     },
     statsGrid: {
@@ -352,7 +352,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     statValue: {
       fontSize: 28,
       fontWeight: '700',
-      color: theme.text,
+      color: theme.textPrimary,
     },
     statLabel: {
       fontSize: 12,

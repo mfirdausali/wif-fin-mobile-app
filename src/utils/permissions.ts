@@ -90,6 +90,11 @@ export function canEditDocument(user: User | null, document: Document): boolean 
 
   if (!user) return false
 
+  // Operations users can only edit payment vouchers
+  if (user.role === 'operations' && document.documentType !== 'payment_voucher') {
+    return false
+  }
+
   // Admins can edit any document including completed/cancelled
   if (user.role === 'admin') {
     return true
@@ -120,6 +125,11 @@ export function canDeleteDocument(user: User | null, document: Document): boolea
 
   if (!user) return false
 
+  // Operations users cannot delete any documents (no delete permission)
+  if (user.role === 'operations') {
+    return false
+  }
+
   // Admins can delete any document
   if (user.role === 'admin') {
     return true
@@ -145,6 +155,25 @@ export function canPrintDocuments(user: User | null): boolean {
  */
 export function canCreateDocuments(user: User | null): boolean {
   return hasPermission(user, 'create_documents')
+}
+
+/**
+ * Check if user can create a specific document type
+ * Operations users can only create payment_voucher
+ */
+export function canCreateDocumentType(user: User | null, documentType: string): boolean {
+  if (!hasPermission(user, 'create_documents')) {
+    return false
+  }
+
+  if (!user) return false
+
+  // Operations users can only create payment vouchers
+  if (user.role === 'operations') {
+    return documentType === 'payment_voucher'
+  }
+
+  return true
 }
 
 /**

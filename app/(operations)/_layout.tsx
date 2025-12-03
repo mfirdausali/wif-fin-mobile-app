@@ -30,7 +30,7 @@ export default function OperationsTabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#059669', // emerald-600 for operations theme
+        tabBarActiveTintColor: appTheme.tabActive,
         tabBarInactiveTintColor: appTheme.textMuted,
         tabBarStyle: {
           backgroundColor: isDark ? appTheme.bgSecondary : appTheme.bgCard,

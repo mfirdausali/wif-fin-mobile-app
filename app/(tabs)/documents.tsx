@@ -133,6 +133,7 @@ export default function DocumentsScreen() {
     try {
       const data = await getDocuments(undefined, {
         type: selectedType === 'all' ? undefined : selectedType,
+        userRole: user?.role, // Filter documents based on user role
       })
       setDocuments(data)
     } catch (error) {
@@ -140,7 +141,7 @@ export default function DocumentsScreen() {
     } finally {
       setIsLoading(false)
     }
-  }, [selectedType])
+  }, [selectedType, user?.role])
 
   useEffect(() => {
     fetchDocuments()

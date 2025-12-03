@@ -151,6 +151,8 @@ function getDocumentPrefix(type: DocumentType): string {
 
 /**
  * Get all documents for a company
+ * @param companyId - Company ID
+ * @param options - Query options (type, status, limit, offset, userRole)
  */
 export async function getDocuments(
   companyId: string = DEFAULT_COMPANY_ID,
@@ -159,6 +161,7 @@ export async function getDocuments(
     status?: DocumentStatus
     limit?: number
     offset?: number
+    userRole?: string
   }
 ): Promise<Document[]> {
   try {
@@ -169,7 +172,10 @@ export async function getDocuments(
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
-    if (options?.type) {
+    // Filter by document type for operations users (payment_voucher only)
+    if (options?.userRole === 'operations') {
+      query = query.eq('document_type', 'payment_voucher')
+    } else if (options?.type) {
       query = query.eq('document_type', options.type)
     }
 

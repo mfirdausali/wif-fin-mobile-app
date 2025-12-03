@@ -146,14 +146,14 @@ export default function DashboardScreen() {
 
   const fetchData = useCallback(async () => {
     try {
-      // Fetch recent documents for all users
-      const documents = await getDocuments(undefined, { limit: 5 })
+      // Fetch recent documents for all users (filtered by role)
+      const documents = await getDocuments(undefined, { limit: 5, userRole: user?.role })
       setRecentDocuments(documents)
 
       // Only fetch account data if user can view financials
       if (showFinancials) {
         const accounts = await getAccounts(undefined, { activeOnly: true })
-        const allDocuments = await getDocuments()
+        const allDocuments = await getDocuments(undefined, { userRole: user?.role })
 
         // Initialize account order with WIF JAPAN SDN BHD first
         const accountNames: Record<string, string> = {}

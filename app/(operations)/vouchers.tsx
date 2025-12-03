@@ -51,39 +51,48 @@ export default function OperationsVouchersScreen() {
     if (!user?.companyId) return
 
     try {
-      const { data, error } = await supabase
+      // First get documents
+      const { data: docs, error: docsError } = await supabase
         .from('documents')
-        .select(`
-          id,
-          document_number,
-          amount,
-          currency,
-          status,
-          created_at,
-          payment_vouchers!inner (
-            vendor_name,
-            description,
-            voucher_date
-          )
-        `)
+        .select('id, document_number, amount, currency, status, created_at, notes')
         .eq('company_id', user.companyId)
         .eq('document_type', 'payment_voucher')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (docsError) throw docsError
 
-      const formattedVouchers: PaymentVoucher[] = (data || []).map((doc: any) => ({
-        id: doc.id,
-        documentNumber: doc.document_number,
-        amount: doc.amount,
-        currency: doc.currency,
-        status: doc.status,
-        vendorName: doc.payment_vouchers?.vendor_name || 'Unknown',
-        description: doc.payment_vouchers?.description || '',
-        createdAt: doc.created_at,
-        voucherDate: doc.payment_vouchers?.voucher_date,
-      }))
+      if (!docs || docs.length === 0) {
+        setVouchers([])
+        return
+      }
+
+      // Get payment voucher details
+      const docIds = docs.map(d => d.id)
+      const { data: pvData, error: pvError } = await supabase
+        .from('payment_vouchers')
+        .select('document_id, payee_name, voucher_date')
+        .in('document_id', docIds)
+
+      if (pvError) throw pvError
+
+      // Map payment voucher details by document_id
+      const pvMap = new Map((pvData || []).map(pv => [pv.document_id, pv]))
+
+      const formattedVouchers: PaymentVoucher[] = docs.map((doc: any) => {
+        const pv = pvMap.get(doc.id)
+        return {
+          id: doc.id,
+          documentNumber: doc.document_number,
+          amount: doc.amount,
+          currency: doc.currency,
+          status: doc.status,
+          vendorName: pv?.payee_name || 'Unknown',
+          description: doc.notes || '',
+          createdAt: doc.created_at,
+          voucherDate: pv?.voucher_date,
+        }
+      })
 
       setVouchers(formattedVouchers)
     } catch (error) {
@@ -116,17 +125,17 @@ export default function OperationsVouchersScreen() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
-        return '#6b7280'
-      case 'pending':
-        return '#f59e0b'
-      case 'approved':
-        return '#3b82f6'
+        return appTheme.textMuted
+      case 'issued':
+        return appTheme.indigo
+      case 'paid':
+        return appTheme.positive
       case 'completed':
-        return '#10b981'
+        return appTheme.positive
       case 'cancelled':
-        return '#ef4444'
+        return appTheme.negative
       default:
-        return '#6b7280'
+        return appTheme.textMuted
     }
   }
 
@@ -143,7 +152,7 @@ export default function OperationsVouchersScreen() {
     >
       <View style={styles.voucherHeader}>
         <View style={styles.voucherIcon}>
-          <FileText size={20} color="#059669" />
+          <FileText size={20} color={appTheme.jade} />
         </View>
         <View style={styles.voucherInfo}>
           <Text style={styles.documentNumber}>{item.documentNumber}</Text>
@@ -199,7 +208,7 @@ export default function OperationsVouchersScreen() {
       <View style={styles.content}>
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#059669" />
+            <ActivityIndicator size="large" color={appTheme.jade} />
           </View>
         ) : vouchers.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -237,7 +246,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#059669',
+      backgroundColor: theme.jade,
     },
     header: {
       flexDirection: 'row',
@@ -289,7 +298,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     emptyTitle: {
       fontSize: 20,
       fontWeight: '600',
-      color: theme.text,
+      color: theme.textPrimary,
       marginTop: 16,
     },
     emptySubtitle: {
@@ -302,7 +311,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      backgroundColor: '#059669',
+      backgroundColor: theme.jade,
       paddingHorizontal: 20,
       paddingVertical: 12,
       borderRadius: 12,
@@ -319,7 +328,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       padding: 16,
       marginBottom: 12,
       borderLeftWidth: 4,
-      borderLeftColor: '#059669',
+      borderLeftColor: theme.jade,
       ...Platform.select({
         ios: {
           shadowColor: '#000',
@@ -341,7 +350,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       width: 40,
       height: 40,
       borderRadius: 10,
-      backgroundColor: '#05966920',
+      backgroundColor: theme.jadeSoft,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 12,
@@ -352,7 +361,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     documentNumber: {
       fontSize: 16,
       fontWeight: '600',
-      color: theme.text,
+      color: theme.textPrimary,
     },
     vendorName: {
       fontSize: 14,
@@ -383,7 +392,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
     detailValue: {
       fontSize: 14,
       fontWeight: '600',
-      color: theme.text,
+      color: theme.textPrimary,
       marginTop: 2,
     },
     description: {
@@ -399,7 +408,7 @@ const createStyles = (theme: ReturnType<typeof getAppTheme>, isDark: boolean) =>
       marginTop: 12,
       paddingTop: 12,
       borderTopWidth: 1,
-      borderTopColor: theme.border,
+      borderTopColor: theme.borderSubtle,
     },
     viewDetails: {
       fontSize: 13,
