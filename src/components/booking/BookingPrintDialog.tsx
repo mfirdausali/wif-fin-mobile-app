@@ -11,10 +11,12 @@ import {
   View,
   ScrollView,
   Pressable,
+  TouchableOpacity,
   TextInput,
   ActivityIndicator,
   StyleSheet,
   Text,
+  Platform,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { Booking } from '../../types'
@@ -336,45 +338,47 @@ export const BookingPrintDialog = memo(function BookingPrintDialog({
                 </View>
               </View>
 
-              {/* Price Options */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
+              {/* Price Options - Sensitive/Discouraged */}
+              <View style={styles.sensitiveSection}>
+                <View style={styles.sensitiveSectionHeader}>
                   <Ionicons
-                    name="warning-outline"
-                    size={18}
-                    color={COLORS.kinGold}
-                    style={{ marginRight: 6 }}
+                    name="warning"
+                    size={16}
+                    color={COLORS.warmGray}
                   />
-                  <Text style={styles.sectionTitle}>Pricing Options</Text>
+                  <Text style={styles.sensitiveSectionTitle}>Sensitive Options</Text>
                 </View>
 
-                <Pressable
+                <TouchableOpacity
                   onPress={handleIncludePricesToggle}
+                  activeOpacity={0.7}
                   style={[
-                    styles.priceOption,
-                    includePrices && styles.priceOptionActive,
+                    styles.sensitiveOption,
+                    includePrices && styles.sensitiveOptionActive,
                   ]}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <View style={styles.categoryCheckbox} pointerEvents="none">
+                  <View style={[styles.categoryCheckbox, styles.sensitiveCheckbox]}>
                     {includePrices && (
                       <Ionicons name="checkmark" size={16} color={COLORS.shuVermillion} />
                     )}
                   </View>
-                  <View style={styles.priceOptionContent} pointerEvents="none">
-                    <Text style={styles.priceOptionTitle}>
+                  <View style={styles.priceOptionContent}>
+                    <Text style={styles.sensitiveOptionTitle}>
                       Include Internal & B2B Prices
                     </Text>
-                    <Text style={styles.priceOptionDesc}>
-                      For internal reference only - requires confirmation
+                    <Text style={styles.sensitiveOptionDesc}>
+                      Not recommended - requires confirmation
                     </Text>
                     {includePrices && (
-                      <Text style={styles.priceWarning}>
-                        Pricing information will be included with "INTERNAL USE ONLY" watermark
-                      </Text>
+                      <View style={styles.sensitiveWarningBadge}>
+                        <Ionicons name="alert-circle" size={12} color={COLORS.shuVermillion} />
+                        <Text style={styles.sensitiveWarningText}>
+                          INTERNAL USE ONLY watermark will be applied
+                        </Text>
+                      </View>
                     )}
                   </View>
-                </Pressable>
+                </TouchableOpacity>
               </View>
             </ScrollView>
 
@@ -405,89 +409,113 @@ export const BookingPrintDialog = memo(function BookingPrintDialog({
               </Pressable>
             </View>
           </View>
-        </View>
-      </Modal>
 
-      {/* Price Confirmation Dialog */}
-      <Modal
-        visible={showPriceConfirmation}
-        transparent
-        animationType="fade"
-        onRequestClose={handlePriceCancel}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.confirmDialog}>
-            <View style={styles.confirmHeader}>
-              <Ionicons
-                name="warning"
-                size={24}
-                color={COLORS.shuVermillion}
-              />
-              <Text style={styles.confirmTitle}>
-                Confidential Information Warning
-              </Text>
+          {/* Price Confirmation Dialog - Rendered as overlay inside modal */}
+          {showPriceConfirmation && (
+            <View style={styles.confirmOverlay}>
+              <View style={styles.confirmDialog}>
+                {/* Structured Header with Icon Container */}
+                <View style={styles.confirmHeader}>
+                  <View style={styles.confirmIconContainer}>
+                    <Ionicons
+                      name="warning"
+                      size={20}
+                      color={COLORS.shuVermillion}
+                    />
+                  </View>
+                  <Text style={styles.confirmTitle}>
+                    Confidential Information
+                  </Text>
+                </View>
+
+                <ScrollView style={styles.confirmContent} showsVerticalScrollIndicator={false}>
+                  {/* Intro Text */}
+                  <Text style={styles.confirmIntro}>
+                    You are about to include{' '}
+                    <Text style={styles.confirmBold}>SENSITIVE PRICING INFORMATION</Text>:
+                  </Text>
+
+                  {/* Info Items Box */}
+                  <View style={styles.infoItemsBox}>
+                    <View style={styles.infoItem}>
+                      <View style={styles.infoBullet} />
+                      <Text style={styles.infoItemText}>Internal Cost (WIF's vendor cost)</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <View style={styles.infoBullet} />
+                      <Text style={styles.infoItemText}>B2B Price (charged to partners)</Text>
+                    </View>
+                  </View>
+
+                  {/* Warning Box */}
+                  <View style={styles.warningBox}>
+                    <Text style={styles.warningLabel}>NEVER SHARE WITH</Text>
+                    <View style={styles.warningList}>
+                      <View style={styles.warningItem}>
+                        <Ionicons name="close" size={14} color={COLORS.shuVermillion} />
+                        <Text style={styles.warningItemText}>External vendors</Text>
+                      </View>
+                      <View style={styles.warningItem}>
+                        <Ionicons name="close" size={14} color={COLORS.shuVermillion} />
+                        <Text style={styles.warningItemText}>End customers</Text>
+                      </View>
+                      <View style={styles.warningItem}>
+                        <Ionicons name="close" size={14} color={COLORS.shuVermillion} />
+                        <Text style={styles.warningItemText}>Unauthorized personnel</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Proceed Note */}
+                  <Text style={styles.proceedNote}>
+                    Only proceed if this document is for internal accounting or management review.
+                  </Text>
+
+                  {/* Confirm Input Group */}
+                  <View style={styles.confirmInputGroup}>
+                    <Text style={styles.confirmInputLabel}>
+                      Type <Text style={styles.confirmCode}>CONFIRM</Text> to proceed:
+                    </Text>
+                    <TextInput
+                      value={confirmText}
+                      onChangeText={setConfirmText}
+                      placeholder="Type CONFIRM"
+                      placeholderTextColor={COLORS.warmGray}
+                      style={[
+                        styles.confirmTextInput,
+                        confirmText.toUpperCase() === 'CONFIRM' && styles.confirmTextInputValid,
+                      ]}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                    />
+                  </View>
+                </ScrollView>
+
+                {/* Modal Actions */}
+                <View style={styles.confirmFooter}>
+                  <Pressable
+                    onPress={handlePriceCancel}
+                    style={styles.confirmCancelButton}
+                  >
+                    <Text style={styles.confirmCancelButtonLabel}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handlePriceConfirm}
+                    disabled={confirmText.toUpperCase() !== 'CONFIRM'}
+                    style={[
+                      styles.confirmActionButton,
+                      confirmText.toUpperCase() !== 'CONFIRM' && styles.confirmActionButtonDisabled,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.confirmActionButtonLabel,
+                      confirmText.toUpperCase() !== 'CONFIRM' && styles.confirmActionButtonLabelDisabled,
+                    ]}>Include Prices</Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
-
-            <ScrollView style={styles.confirmContent}>
-              <Text style={styles.confirmText}>
-                You are about to include{' '}
-                <Text style={styles.confirmBold}>SENSITIVE PRICING INFORMATION</Text>:
-              </Text>
-
-              <View style={styles.confirmList}>
-                <Text style={styles.confirmListItem}>• Internal Cost (WIF's vendor cost)</Text>
-                <Text style={styles.confirmListItem}>• B2B Price (charged to partners)</Text>
-              </View>
-
-              <Text style={[styles.confirmText, styles.confirmWarning]}>
-                This information should NEVER be shared with:
-              </Text>
-
-              <View style={styles.confirmList}>
-                <Text style={[styles.confirmListItem, styles.confirmWarning]}>• External vendors</Text>
-                <Text style={[styles.confirmListItem, styles.confirmWarning]}>• End customers</Text>
-                <Text style={[styles.confirmListItem, styles.confirmWarning]}>• Unauthorized personnel</Text>
-              </View>
-
-              <Text style={styles.confirmText}>
-                Only proceed if this document is for internal accounting or management review.
-              </Text>
-
-              <View style={styles.confirmInput}>
-                <Text style={styles.confirmInputLabel}>
-                  Type "CONFIRM" to proceed:
-                </Text>
-                <TextInput
-                  value={confirmText}
-                  onChangeText={setConfirmText}
-                  placeholder="Type CONFIRM"
-                  placeholderTextColor={COLORS.warmGray}
-                  style={styles.confirmTextInput}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                />
-              </View>
-            </ScrollView>
-
-            <View style={styles.confirmFooter}>
-              <Pressable
-                onPress={handlePriceCancel}
-                style={styles.cancelButton}
-              >
-                <Text style={styles.cancelButtonLabel}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={handlePriceConfirm}
-                disabled={confirmText.toUpperCase() !== 'CONFIRM'}
-                style={[
-                  styles.confirmActionButton,
-                  confirmText.toUpperCase() !== 'CONFIRM' && styles.confirmActionButtonDisabled,
-                ]}
-              >
-                <Text style={styles.confirmActionButtonLabel}>Include Prices</Text>
-              </Pressable>
-            </View>
-          </View>
+          )}
         </View>
       </Modal>
     </>
@@ -499,6 +527,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  confirmOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
   container: {
     backgroundColor: COLORS.shiroWhite,
@@ -675,36 +710,70 @@ const styles = StyleSheet.create({
     color: COLORS.warmGray,
     marginTop: 2,
   },
-  priceOption: {
+  // Sensitive/Discouraged section styles
+  sensitiveSection: {
+    marginBottom: 24,
+    opacity: 0.75,
+  },
+  sensitiveSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  sensitiveSectionTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.warmGray,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sensitiveOption: {
     flexDirection: 'row',
     padding: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(107, 101, 96, 0.04)',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.lightGray,
+    borderColor: 'rgba(107, 101, 96, 0.15)',
+    borderStyle: 'dashed',
   },
-  priceOptionActive: {
+  sensitiveOptionActive: {
     borderColor: COLORS.shuVermillion,
-    backgroundColor: 'rgba(209, 75, 75, 0.05)',
+    borderStyle: 'solid',
+    backgroundColor: 'rgba(209, 75, 75, 0.08)',
+    opacity: 1,
+  },
+  sensitiveCheckbox: {
+    borderColor: 'rgba(107, 101, 96, 0.3)',
   },
   priceOptionContent: {
     flex: 1,
   },
-  priceOptionTitle: {
+  sensitiveOptionTitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: COLORS.sumiInk,
+    color: COLORS.warmGray,
   },
-  priceOptionDesc: {
+  sensitiveOptionDesc: {
     fontSize: 12,
     color: COLORS.warmGray,
     marginTop: 2,
+    fontStyle: 'italic',
   },
-  priceWarning: {
-    fontSize: 12,
+  sensitiveWarningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: 'rgba(209, 75, 75, 0.1)',
+    borderRadius: 6,
+  },
+  sensitiveWarningText: {
+    fontSize: 11,
     color: COLORS.shuVermillion,
-    fontWeight: '500',
-    marginTop: 8,
+    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',
@@ -753,78 +822,184 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.6,
   },
-  // Confirmation dialog styles
+  // Confirmation dialog styles - WIF Japan Design System
   confirmDialog: {
-    backgroundColor: COLORS.shiroWhite,
-    borderRadius: 16,
-    margin: 20,
-    maxHeight: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    width: '90%',
+    maxWidth: 340,
+    maxHeight: '85%',
+    overflow: 'hidden',
+    shadowColor: COLORS.sumiInk,
+    shadowOffset: { width: 0, height: 25 },
+    shadowOpacity: 0.25,
+    shadowRadius: 50,
+    elevation: 25,
   },
   confirmHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    gap: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(199, 91, 74, 0.1)',
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.shuVermillion,
+  },
+  confirmIconContainer: {
+    width: 36,
+    height: 36,
+    backgroundColor: 'rgba(199, 91, 74, 0.15)',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   confirmTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: COLORS.shuVermillion,
+    letterSpacing: -0.2,
   },
   confirmContent: {
     padding: 20,
   },
-  confirmText: {
+  confirmIntro: {
     fontSize: 14,
     color: COLORS.sumiInk,
-    lineHeight: 20,
-    marginBottom: 12,
+    lineHeight: 21,
+    marginBottom: 16,
   },
   confirmBold: {
     fontWeight: '700',
+    color: COLORS.sumiInk,
   },
-  confirmWarning: {
-    color: COLORS.shuVermillion,
-    fontWeight: '500',
-  },
-  confirmList: {
+  // Info Items Box
+  infoItemsBox: {
+    backgroundColor: '#F7F5F2',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     marginBottom: 16,
   },
-  confirmListItem: {
-    fontSize: 14,
-    color: COLORS.sumiInk,
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 6,
+  },
+  infoBullet: {
+    width: 6,
+    height: 6,
+    backgroundColor: COLORS.warmGray,
+    borderRadius: 3,
+    marginTop: 6,
+  },
+  infoItemText: {
+    fontSize: 13,
+    color: '#5C5650',
+    lineHeight: 18,
+    flex: 1,
+  },
+  // Warning Box
+  warningBox: {
+    backgroundColor: 'rgba(199, 91, 74, 0.1)',
+    borderWidth: 1,
+    borderColor: COLORS.shuVermillion,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
+  },
+  warningLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.shuVermillion,
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  warningList: {
+    gap: 6,
+  },
+  warningItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  warningItemText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.shuVermillion,
+  },
+  // Proceed Note
+  proceedNote: {
+    fontSize: 13,
+    color: '#5C5650',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  // Confirm Input Group
+  confirmInputGroup: {
     marginBottom: 4,
   },
-  confirmInput: {
-    marginTop: 8,
-  },
   confirmInputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.sumiInk,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5C5650',
     marginBottom: 8,
   },
-  confirmTextInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+  confirmCode: {
+    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
+    fontSize: 12,
+    fontWeight: '700',
     color: COLORS.sumiInk,
+    backgroundColor: '#F7F5F2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
+  confirmTextInput: {
+    backgroundColor: '#F7F5F2',
+    borderWidth: 1.5,
+    borderColor: 'rgba(26, 24, 21, 0.12)',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
+    fontWeight: '500',
+    color: COLORS.sumiInk,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  confirmTextInputValid: {
+    borderColor: COLORS.shuVermillion,
+    backgroundColor: 'rgba(199, 91, 74, 0.1)',
+  },
+  // Modal Actions
   confirmFooter: {
     flexDirection: 'row',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.lightGray,
     gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 20,
+  },
+  confirmCancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#FAF8F5',
+    borderWidth: 1.5,
+    borderColor: 'rgba(26, 24, 21, 0.12)',
+  },
+  confirmCancelButtonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#5C5650',
   },
   confirmActionButton: {
-    flex: 1,
-    flexDirection: 'row',
+    flex: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
@@ -833,12 +1008,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.shuVermillion,
   },
   confirmActionButtonDisabled: {
-    backgroundColor: COLORS.lightGray,
-    opacity: 0.6,
+    backgroundColor: '#B5B0A8',
   },
   confirmActionButtonLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  confirmActionButtonLabelDisabled: {
     color: '#FFFFFF',
   },
 })

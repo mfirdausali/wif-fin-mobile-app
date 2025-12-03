@@ -14,7 +14,7 @@ import * as SecureStore from 'expo-secure-store'
 import { logAuthEvent } from '../activity/activityLogService'
 
 // Types matching web app
-export type UserRole = 'viewer' | 'accountant' | 'manager' | 'admin'
+export type UserRole = 'viewer' | 'accountant' | 'manager' | 'admin' | 'operations'
 
 export interface User {
   id: string

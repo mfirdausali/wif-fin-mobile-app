@@ -231,7 +231,9 @@ export default function DocumentEditScreen() {
           <ReceiptEditForm
             document={document as Receipt}
             onSave={handleSave}
+            onCancel={handleCancel}
             isSaving={isSaving}
+            theme={theme}
           />
         )}
 
@@ -239,7 +241,9 @@ export default function DocumentEditScreen() {
           <PaymentVoucherEditForm
             document={document as PaymentVoucher}
             onSave={handleSave}
+            onCancel={handleCancel}
             isSaving={isSaving}
+            theme={theme}
           />
         )}
 
@@ -247,7 +251,9 @@ export default function DocumentEditScreen() {
           <StatementOfPaymentEditForm
             document={document as StatementOfPayment}
             onSave={handleSave}
+            onCancel={handleCancel}
             isSaving={isSaving}
+            theme={theme}
           />
         )}
       </KeyboardAvoidingView>

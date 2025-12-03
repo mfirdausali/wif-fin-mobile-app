@@ -11,6 +11,8 @@ const rolePermissions: Record<UserRole, Permission[]> = {
   viewer: [
     'view_documents',
     'print_documents',
+    'view_bookings',
+    'print_bookings',
   ],
   accountant: [
     'view_documents',
@@ -18,6 +20,10 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     'edit_documents',
     'print_documents',
     'manage_accounts',
+    'view_bookings',
+    'create_bookings',
+    'edit_bookings',
+    'print_bookings',
   ],
   manager: [
     'view_documents',
@@ -27,6 +33,11 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     'approve_documents',
     'print_documents',
     'manage_accounts',
+    'view_bookings',
+    'create_bookings',
+    'edit_bookings',
+    'delete_bookings',
+    'print_bookings',
   ],
   admin: [
     'view_documents',
@@ -39,6 +50,22 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     'manage_users',
     'view_audit_logs',
     'manage_settings',
+    'view_bookings',
+    'create_bookings',
+    'edit_bookings',
+    'delete_bookings',
+    'print_bookings',
+  ],
+  // Operations: Limited to Payment Vouchers and Bookings only
+  operations: [
+    'view_documents',     // Limited to PV only (enforced in UI)
+    'create_documents',   // Limited to PV only (enforced in UI)
+    'edit_documents',     // Limited to PV only (enforced in UI)
+    'print_documents',
+    'view_bookings',
+    'create_bookings',
+    'edit_bookings',
+    'print_bookings',
   ],
 }
 
@@ -153,4 +180,40 @@ export function getEditRestrictionMessage(user: User | null, document: Document)
   }
 
   return null
+}
+
+/**
+ * Check if user is an operations role user
+ */
+export function isOperationsUser(user: User | null): boolean {
+  return user?.role === 'operations'
+}
+
+/**
+ * Check if user can access bookings
+ */
+export function canAccessBookings(user: User | null): boolean {
+  return hasPermission(user, 'view_bookings')
+}
+
+/**
+ * Check if user can access accounts/ledger
+ */
+export function canAccessAccounts(user: User | null): boolean {
+  if (!user) return false
+  // Operations users cannot access accounts/ledger
+  if (user.role === 'operations') return false
+  return true
+}
+
+/**
+ * Get document types accessible by the user
+ * Operations users can only access payment_voucher
+ */
+export function getAccessibleDocumentTypes(user: User | null): string[] {
+  if (!user) return []
+  if (user.role === 'operations') {
+    return ['payment_voucher']
+  }
+  return ['invoice', 'receipt', 'payment_voucher', 'statement_of_payment']
 }

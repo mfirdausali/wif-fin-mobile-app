@@ -9,8 +9,10 @@
  */
 
 import { useState, memo, useCallback } from 'react'
-import { Pressable, StyleSheet, View, ScrollView as RNScrollView } from 'react-native'
+import { Pressable, StyleSheet, View, ScrollView as RNScrollView, Platform, Modal } from 'react-native'
 import { YStack, XStack, Text, ScrollView } from 'tamagui'
+import { Calendar } from '@tamagui/lucide-icons'
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import * as Haptics from 'expo-haptics'
 
 import { Input, Card } from '../ui'
@@ -66,6 +68,12 @@ interface ReceiptCreateFormProps {
 const getTodayISO = () => {
   const now = new Date()
   return now.toISOString().split('T')[0]
+}
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 const PAYMENT_METHODS = [
@@ -153,6 +161,7 @@ export function ReceiptCreateForm({
 }: ReceiptCreateFormProps) {
   const [validationError, setValidationError] = useState<string | null>(null)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [showReceiptDatePicker, setShowReceiptDatePicker] = useState(false)
 
   const [formData, setFormData] = useState({
     payerName: '',
@@ -206,6 +215,20 @@ export function ReceiptCreateForm({
     const country: Country = currency === 'JPY' ? 'Japan' : 'Malaysia'
     setFormData((prev) => ({ ...prev, currency, country, accountId: '' }))
   }, [])
+
+  const handleReceiptDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowReceiptDatePicker(false)
+    }
+    if (selectedDate) {
+      setFormData({ ...formData, receiptDate: selectedDate.toISOString().split('T')[0] })
+    }
+  }
+
+  const openReceiptDatePicker = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setShowReceiptDatePicker(true)
+  }
 
   const handleSubmit = useCallback(async () => {
     setValidationError(null)
@@ -286,12 +309,59 @@ export function ReceiptCreateForm({
             <SectionHeader title="Receipt Details" theme={theme} />
 
             <FormField label="Receipt Date" required theme={theme}>
-              <Input
-                value={formData.receiptDate}
-                onChangeText={(value) => setFormData({ ...formData, receiptDate: value })}
-                placeholder="YYYY-MM-DD"
-              />
+              <Pressable
+                onPress={openReceiptDatePicker}
+                style={[styles.dateInput, { borderColor: theme.borderSubtle, backgroundColor: theme.bgCard }]}
+              >
+                <Text fontSize={14} fontWeight="500" color={theme.textPrimary}>
+                  {formatDate(formData.receiptDate)}
+                </Text>
+                <Calendar size={18} color={theme.textMuted} />
+              </Pressable>
             </FormField>
+
+            {/* iOS Date Picker */}
+            {Platform.OS === 'ios' && showReceiptDatePicker && (
+              <Modal
+                transparent
+                animationType="fade"
+                visible={showReceiptDatePicker}
+                onRequestClose={() => setShowReceiptDatePicker(false)}
+              >
+                <Pressable
+                  style={styles.datePickerOverlay}
+                  onPress={() => setShowReceiptDatePicker(false)}
+                >
+                  <Pressable style={[styles.datePickerContainer, { backgroundColor: theme.bgCard }]}>
+                    <XStack justifyContent="space-between" alignItems="center" paddingHorizontal="$4" paddingVertical="$3" borderBottomWidth={1} borderBottomColor={theme.borderSubtle}>
+                      <Text fontSize={17} fontWeight="600" color={theme.textPrimary}>Receipt Date</Text>
+                      <Pressable onPress={() => setShowReceiptDatePicker(false)} hitSlop={8}>
+                        <Text fontSize={17} fontWeight="600" color={theme.gold}>Done</Text>
+                      </Pressable>
+                    </XStack>
+                    <DateTimePicker
+                      value={new Date(formData.receiptDate)}
+                      mode="date"
+                      display="spinner"
+                      onChange={handleReceiptDateChange}
+                      locale="en-GB"
+                      themeVariant="light"
+                      style={{ height: 200 }}
+                    />
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            )}
+
+            {/* Android Date Picker */}
+            {Platform.OS === 'android' && showReceiptDatePicker && (
+              <DateTimePicker
+                value={new Date(formData.receiptDate)}
+                mode="date"
+                display="default"
+                onChange={handleReceiptDateChange}
+              />
+            )}
           </Card>
 
           {/* Link to Invoice */}
@@ -605,6 +675,33 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 20,
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 10,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  datePickerContainer: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 16,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 8,
   },
   formCard: {
     shadowColor: '#000',

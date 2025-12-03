@@ -936,6 +936,8 @@ export default function BookingEditScreen() {
                 mode="date"
                 display="spinner"
                 onChange={handleStartDateChange}
+                locale="en-GB"
+                themeVariant="light"
                 style={{ height: 200 }}
               />
             </View>
@@ -967,6 +969,8 @@ export default function BookingEditScreen() {
                 display="spinner"
                 onChange={handleEndDateChange}
                 minimumDate={startDate ? new Date(startDate) : undefined}
+                locale="en-GB"
+                themeVariant="light"
                 style={{ height: 200 }}
               />
             </View>

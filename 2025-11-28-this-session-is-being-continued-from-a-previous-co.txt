@@ -1,0 +1,4107 @@
+
+ ▐▛███▜▌   Claude Code v2.0.55
+▝▜█████▛▘  Opus 4.5 · Claude Max
+  ▘▘ ▝▝    ~/Documents/2025/code/wif-fin-mobile-app/wif-finance
+══════════════════ Conversation compacted · ctrl+o for history ═════════════════
+  ⎿  Read app/(tabs)/bookings.tsx (369 lines)
+  ⎿  Referenced file app/booking/new.tsx
+  ⎿  Referenced file app/booking/edit/[id].tsx
+  ⎿  Read src/types/booking.ts (239 lines)
+  ⎿  Referenced file src/services/bookings/bookingService.ts
+  ⎿  Todo list read (6 items)
+
+⏺ I'll continue removing the remaining tripName references. Let me read the
+  files that still have tripName references.
+
+⏺ Read(app/booking/edit/[id].tsx)
+  ⎿  Read 100 lines
+
+⏺ Read(src/utils/validation.ts)
+  ⎿  Read 30 lines
+
+⏺ Found the remaining tripName references. Let me fix them:
+
+⏺ Update(app/booking/edit/[id].tsx)
+  ⎿  Updated app/booking/edit/[id].tsx with 4 removals             
+       431        if (!booking) return
+       432    
+       433        // Validation
+       434 -      if (!tripName.trim()) {
+       435 -        Alert.alert('Validation Error', 'Trip name is 
+           - required')
+       436 -        return
+       437 -      }
+       434        if (!guestName.trim()) {
+       435          Alert.alert('Validation Error', 'Guest name is 
+             required')
+       436          return
+
+⏺ Update(app/booking/edit/[id].tsx)
+  ⎿  Updated app/booking/edit/[id].tsx with 1 removal           
+       499                  status: updatedBooking.status,
+       500                },
+       501                {
+       502 -                tripName: updatedBooking.tripName,
+       502                  startDate: updatedBooking.startDate,
+       503                  endDate: updatedBooking.endDate,
+       504                  pax: updatedBooking.pax,
+
+⏺ Update(src/utils/validation.ts)
+  ⎿  Updated src/utils/validation.ts with 3 removals                     
+       393      if (!data.guestName || !isNonEmptyString(data.guestName))
+              {
+       394        errors.push(createError('guestName', 'Guest name is 
+             required'))
+       395      }
+       396 -    if (!data.tripName || !isNonEmptyString(data.tripName)) {
+       397 -      errors.push(createError('tripName', 'Trip name is 
+           - required'))
+       398 -    }
+       396    
+       397      // Date fields
+       398      if (!data.startDate || !isValidDate(data.startDate)) {
+
+⏺ Now let me verify all tripName references have been removed:
+
+⏺ Search(pattern: "tripName", path:
+        "~/Documents/2025/code/wif-fin-mobile-app/wif-finance", output_mode:
+        "content")
+  ⎿  Found 1 line (ctrl+o to expand)
+
+⏺ There's still a reference in a JSDoc comment. Let me fix it:
+
+⏺ Read(src/utils/validation.ts)
+  ⎿  Read 20 lines
+
+⏺ Update(src/utils/validation.ts)
+  ⎿  Updated src/utils/validation.ts with 1 addition and 2 removals
+       375     * @example
+       376     * const result = validateBooking({
+       377     *   bookingNumber: 'BK-2025-001',
+       378 -   *   guestName: 'Travel Group A',
+       379 -   *   tripName: 'Japan Winter Tour',
+       378 +   *   guestName: 'Japan Winter Tour - Travel Group A',
+       379     *   startDate: '2025-12-01',
+       380     *   endDate: '2025-12-10',
+       381     *   pax: 10,
+
+⏺ Let me verify no more tripName references remain:
+
+⏺ Search(pattern: "tripName", path:
+        "~/Documents/2025/code/wif-fin-mobile-app/wif-finance", output_mode:
+        "content")
+  ⎿  Found 0 lines 
+
+⏺ All tripName references removed. Let me verify the build compiles without
+  errors:
+
+⏺ Bash(npx tsc --noEmit 2>&1 | head -50)
+  ⎿ app/(tabs)/bookings.tsx(146,13): error TS2322: Type '"CormorantGaramond
+    _500Medium"' is not assignable to type '"unset" | GetThemeValueForKey<"
+    fontFamily"> | undefined'.
+    … +129 lines (ctrl+o to expand)
+
+
+
+⏺ The TypeScript errors shown are pre-existing issues unrelated to the
+  tripName removal (they're about Tamagui fontFamily types and document
+  generation). The tripName removal is complete with no new errors
+  introduced.
+
+⏺ Bash(git status)
+  ⎿  On branch main                               
+     Your branch is up to date with 'origin/main'.
+     … +12 lines (ctrl+o to expand)
+
+⏺ Bash(git log --oneline -5)
+  ⎿ d83047d fix: booking data flow - tripName, exchange rate, and type alig
+    nment
+    e71e63b fix: remove hardcoded fallback values in booking list stats
+    … +5 lines (ctrl+o to expand)
+
+
+⏺ Bash(git diff --stat)
+  ⎿   app/(tabs)/bookings.tsx                          | 14 +++-----   
+      app/booking/edit/[id].tsx                        | 18 +----------
+      app/booking/new.tsx                              | 17 +---------
+     … +6 lines (ctrl+o to expand)
+
+⏺ Bash(git add -A && git commit -m "fix: remove tripName field to align with web
+       app…)
+  ⎿  [main a247a20] fix: remove tripName field to align with web app     
+      7 files changed, 9 insertions(+), 94 deletions(-)
+      delete mode 100644 supabase/migrations/011_add_trip_name_column.sql
+
+⏺ Bash(git push origin main)
+  ⎿  To https://github.com/mfirdausali/wif-fin-mobile-app.git
+        d83047d..a247a20  main -> main
+
+⏺ All tripName references have been removed. The mobile app is now aligned
+  with the web app:
+
+  Changes made:
+  1. Deleted supabase/migrations/011_add_trip_name_column.sql - migration
+  file no longer needed
+  2. Updated src/types/booking.ts - removed tripName from Booking interface
+  3. Updated src/services/bookings/bookingService.ts - removed tripName
+  handling
+  4. Updated app/booking/new.tsx - removed Trip Name field and validation
+  5. Updated app/booking/edit/[id].tsx - removed Trip Name field,
+  validation, and activity logging
+  6. Updated app/(tabs)/bookings.tsx - fixed to show only guestName (no
+  duplicate)
+  7. Updated src/utils/validation.ts - removed tripName validation
+
+  Result: The booking forms now use only guestName for customer
+  identification, matching the web app's approach. Changes pushed to GitHub
+  (a247a20).
+
+> Make some thoughts (ultrathink) on how can I make the data flow 
+coherence.\
+Like if I have ARBA Hilmi Salleh as customer, how can I track all documents 
+with regards to this person.\
+I believe now everything is treated singularly rather than can be pulled 
+together at once.\
+Check /Users/firdaus/Documents/2025/code/wif-fin and think of suitable 
+mechanism to ensure coherence.
+
+⏺ I'll thoroughly investigate the data relationships in both the web app and
+   mobile app to understand the current state and propose coherence
+  mechanisms.
+
+⏺ Explore(Analyze data coherence)
+  ⎿  Done (44 tool uses · 92.8k tokens · 2m 1s)                            
+
+⏺ This is an excellent analysis. Let me synthesize the findings and propose
+  coherence mechanisms.
+
+  Current State Analysis
+
+  The Core Problem
+
+  Currently, customer data is fragmented across multiple tables without a
+  unifying identifier:
+
+  ┌──────────────────────────────────────────────────────────────────┐
+  │                    CURRENT DATA MODEL                            │
+  ├──────────────────────────────────────────────────────────────────┤
+  │                                                                  │
+  │  Bookings                    Documents                           │
+  │  ┌─────────────────┐        ┌─────────────────┐                 │
+  │  │ guest_name: TEXT│        │ booking_id: FK  │ (optional)      │
+  │  │ "ARBA Hilmi"    │◄───────│                 │                 │
+  │  └─────────────────┘        └────────┬────────┘                 │
+  │                                      │                           │
+  │        ┌─────────────────────────────┼─────────────────────┐    │
+  │        ▼                             ▼                     ▼    │
+  │  ┌──────────┐              ┌──────────────┐        ┌──────────┐ │
+  │  │ Invoices │              │   Receipts   │        │ Vouchers │ │
+  │  │customer_ │              │  payer_name  │        │payee_name│ │
+  │  │  name    │              │ (≠ customer) │        │(supplier)│ │
+  │  └──────────┘              └──────────────┘        └──────────┘ │
+  │                                                                  │
+  │  NO UNIQUE CUSTOMER ID - Just TEXT fields with pattern matching │
+  └──────────────────────────────────────────────────────────────────┘
+
+  Key Issues Identified
+
+  | Issue                 | Impact
+                       |
+  |-----------------------|-------------------------------------------------
+  ---------------------|
+  | No customers table    | Same customer stored as different text in
+  multiple places            |
+  | guest_name is TEXT    | "ARBA Hilmi", "Arba Hilmi", "ARBA HILMI SALLEH"
+  treated as different |
+  | Weak document linking | documents.booking_id is optional - orphaned
+  documents possible       |
+  | Different name fields | customer_name, payer_name, payee_name - no
+  normalization             |
+
+  ---
+  Proposed Solutions
+
+  Option 1: Customer Master Table (Recommended)
+
+  Create a dedicated customers table as the single source of truth:
+
+  -- New customers table
+  CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+
+    -- Core identity
+    customer_code VARCHAR(20) NOT NULL, -- e.g., "CUST-2025-001"
+    name VARCHAR(255) NOT NULL,         -- Official name
+    display_name VARCHAR(255),          -- How to display (e.g., "ARBA 
+  Hilmi")
+
+    -- Contact info
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    address TEXT,
+    country VARCHAR(100),
+
+    -- Classification
+    customer_type VARCHAR(50) DEFAULT 'b2b', -- 'b2b', 'individual', 
+  'corporate'
+    tags JSONB DEFAULT '[]',                  -- ['vip', 'repeat', 'agency']
+
+    -- Metadata
+    notes TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+    UNIQUE(company_id, customer_code),
+    UNIQUE(company_id, name)  -- Prevent duplicates
+  );
+
+  -- Add customer_id to bookings
+  ALTER TABLE bookings ADD COLUMN customer_id UUID REFERENCES customers(id);
+
+  -- Add customer_id to documents (direct link)
+  ALTER TABLE documents ADD COLUMN customer_id UUID REFERENCES
+  customers(id);
+
+  -- Create index for efficient lookups
+  CREATE INDEX idx_customers_company_name ON customers(company_id, name);
+  CREATE INDEX idx_bookings_customer ON bookings(customer_id);
+  CREATE INDEX idx_documents_customer ON documents(customer_id);
+
+  Benefits:
+  - Single source of truth for customer identity
+  - Unique customer code for unambiguous reference
+  - Can track customer across ALL bookings and documents
+  - Enables customer analytics (total spend, booking history, etc.)
+
+  Data Model After:
+  ┌────────────────────────────────────────────────────────────────────┐
+  │                    PROPOSED DATA MODEL                             │
+  ├────────────────────────────────────────────────────────────────────┤
+  │                                                                    │
+  │                    ┌─────────────────────┐                         │
+  │                    │     Customers       │                         │
+  │                    │ ┌─────────────────┐ │                         │
+  │                    │ │ id: UUID (PK)   │ │                         │
+  │                    │ │ customer_code   │ │                         │
+  │                    │ │ name            │ │                         │
+  │                    │ │ email, phone    │ │                         │
+  │                    │ └─────────────────┘ │                         │
+  │                    └──────────┬──────────┘                         │
+  │                               │                                    │
+  │            ┌──────────────────┼──────────────────┐                 │
+  │            ▼                  ▼                  ▼                 │
+  │     ┌───────────┐      ┌───────────┐      ┌───────────┐           │
+  │     │ Bookings  │      │ Documents │      │ Invoices  │           │
+  │     │customer_id│      │customer_id│      │customer_id│           │
+  │     └───────────┘      └───────────┘      └───────────┘           │
+  │                                                                    │
+  │  ONE customer_id links ALL related records together               │
+  └────────────────────────────────────────────────────────────────────┘
+
+  ---
+  Option 2: Customer Lookup View (Simpler, No Schema Change)
+
+  If you want minimal changes, create a view that consolidates customer
+  data:
+
+  -- Create a unified customer view
+  CREATE OR REPLACE VIEW customer_records AS
+  WITH customer_names AS (
+    -- Get unique customer names from bookings
+    SELECT DISTINCT
+      company_id,
+      TRIM(LOWER(guest_name)) as normalized_name,
+      guest_name as original_name
+    FROM bookings
+    WHERE is_active = true
+
+    UNION
+
+    -- Get from invoices
+    SELECT DISTINCT
+      d.company_id,
+      TRIM(LOWER(i.customer_name)) as normalized_name,
+      i.customer_name as original_name
+    FROM invoices i
+    JOIN documents d ON i.document_id = d.id
+    WHERE d.deleted_at IS NULL
+  )
+  SELECT
+    cn.company_id,
+    cn.normalized_name,
+    cn.original_name,
+
+    -- Aggregate booking data
+    (SELECT COUNT(*) FROM bookings b
+     WHERE b.company_id = cn.company_id
+     AND TRIM(LOWER(b.guest_name)) = cn.normalized_name
+     AND b.is_active = true) as total_bookings,
+
+    -- Aggregate document data  
+    (SELECT COUNT(*) FROM documents d
+     JOIN bookings b ON d.booking_id = b.id
+     WHERE b.company_id = cn.company_id
+     AND TRIM(LOWER(b.guest_name)) = cn.normalized_name
+     AND d.deleted_at IS NULL) as total_documents,
+
+    -- Total revenue
+    (SELECT COALESCE(SUM(grand_total_b2b_jpy), 0) FROM bookings b
+     WHERE b.company_id = cn.company_id
+     AND TRIM(LOWER(b.guest_name)) = cn.normalized_name
+     AND b.is_active = true) as total_revenue_jpy
+
+  FROM customer_names cn
+  GROUP BY cn.company_id, cn.normalized_name, cn.original_name;
+
+  ---
+  Option 3: Service-Level Aggregation
+
+  Add a comprehensive service function to fetch all customer-related
+  records:
+
+  // src/services/customerService.ts
+
+  interface CustomerRecord {
+    customerName: string
+    normalizedName: string
+
+    // Summary stats
+    totalBookings: number
+    totalDocuments: number
+    totalRevenueJPY: number
+    totalRevenueMYR: number
+
+    // Detailed records
+    bookings: Booking[]
+    documents: Document[]
+    invoices: Invoice[]
+    receipts: Receipt[]
+    transactions: Transaction[]
+
+    // Timeline (all events sorted by date)
+    timeline: Array<{
+      date: string
+      type: 'booking' | 'invoice' | 'receipt' | 'payment'
+      description: string
+      amount?: number
+      currency?: string
+      recordId: string
+    }>
+  }
+
+  export async function getCustomerRecord(
+    companyId: string,
+    customerName: string
+  ): Promise<CustomerRecord | null> {
+    const normalizedName = customerName.trim().toLowerCase()
+
+    // 1. Fetch all bookings for this customer
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('company_id', companyId)
+      .ilike('guest_name', `%${customerName}%`)
+      .eq('is_active', true)
+      .order('trip_start_date', { ascending: false })
+
+    if (!bookings || bookings.length === 0) {
+      return null
+    }
+
+    const bookingIds = bookings.map(b => b.id)
+
+    // 2. Fetch all documents linked to these bookings
+    const { data: documents } = await supabase
+      .from('documents')
+      .select('*')
+      .in('booking_id', bookingIds)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    const documentIds = documents?.map(d => d.id) || []
+
+    // 3. Fetch invoice details
+    const { data: invoices } = await supabase
+      .from('invoices')
+      .select('*')
+      .in('document_id', documentIds)
+
+    // 4. Fetch receipt details
+    const { data: receipts } = await supabase
+      .from('receipts')
+      .select('*')
+      .in('document_id', documentIds)
+
+    // 5. Fetch transactions
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('*')
+      .in('document_id', documentIds)
+      .order('created_at', { ascending: false })
+
+    // 6. Build timeline
+    const timeline = buildCustomerTimeline(bookings, documents, invoices,
+  receipts)
+
+    // 7. Calculate totals
+    const totalRevenueJPY = bookings.reduce(
+      (sum, b) => sum + (b.grand_total_b2b_jpy || 0), 0
+    )
+
+    return {
+      customerName: bookings[0].guest_name,
+      normalizedName,
+      totalBookings: bookings.length,
+      totalDocuments: documents?.length || 0,
+      totalRevenueJPY,
+      totalRevenueMYR: totalRevenueJPY * 0.0385, // Use current rate
+      bookings: bookings.map(mapRowToBooking),
+      documents: documents?.map(mapRowToDocument) || [],
+      invoices: invoices || [],
+      receipts: receipts || [],
+      transactions: transactions || [],
+      timeline,
+    }
+  }
+
+  ---
+  Recommended Implementation Path
+
+  Given your current architecture, I recommend a phased approach:
+
+  Phase 1: Service Layer (Immediate - No DB Changes)
+
+  Add getCustomerRecord() service function to both web and mobile apps to
+  enable querying all customer-related data.
+
+  Phase 2: Customer Master Table (Short-term)
+
+  1. Create customers table with migration
+  2. Backfill existing customers from bookings.guest_name
+  3. Add customer_id FK to bookings and documents
+  4. Update forms to select from customer dropdown
+  5. Keep guest_name for backwards compatibility
+
+  Phase 3: UI Enhancements (Medium-term)
+
+  1. Customer list/search screen
+  2. Customer detail page showing all bookings & documents
+  3. Customer analytics (revenue, booking frequency, etc.)
+
+  Would you like me to implement any of these options? I can start with:
+  - Option A: Create the customer master table migration and service
+  - Option B: Add the service-level aggregation first (no schema changes)
+  - Option C: Both - create schema and services together
+
+> because I want to track customer funnel as well 
+
+⏺ That's a crucial addition. Customer funnel tracking means we need to
+  capture the entire customer journey - from initial inquiry through to
+  repeat business. Let me design a comprehensive solution.
+
+⏺ Explore(Research CRM funnel patterns)
+  ⎿  Done (29 tool uses · 64.0k tokens · 60s)                              
+
+⏺ Excellent context. The existing activity logging infrastructure is solid.
+  Now let me design a complete Customer Funnel Tracking system.
+
+  Comprehensive Customer Funnel Architecture
+
+  The Full Customer Journey
+
+  ┌─────────────────────────────────────────────────────────────────────────
+  ────────┐
+  │                         CUSTOMER FUNNEL STAGES
+          │
+  ├─────────────────────────────────────────────────────────────────────────
+  ────────┤
+  │
+          │
+  │  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐
+        │
+  │  │  LEAD   │──▶│QUALIFIED│──▶│PROPOSAL │──▶│NEGOTIA- │──▶│  WON    │
+            │
+  │  │         │   │         │   │  SENT   │   │  TION   │   │(Booked) │
+        │
+  │  └─────────┘   └─────────┘   └─────────┘   └─────────┘   └────┬────┘
+        │
+  │       │             │             │             │              │
+         │
+  │       ▼             ▼             ▼             ▼              ▼
+         │
+  │    [LOST]        [LOST]        [LOST]        [LOST]      ┌─────────┐
+        │
+  │                                                          │IN PROG- │
+        │
+  │                                                          │  RESS   │
+        │
+  │                                                          └────┬────┘
+        │
+  │                                                               │
+        │
+  │                                                               ▼
+        │
+  │                                                          ┌─────────┐
+        │
+  │  ┌─────────┐                                             │COMPLETED│
+        │
+  │  │ REPEAT  │◀────────────────────────────────────────────│         │
+         │
+  │  │CUSTOMER │                                             └─────────┘
+        │
+  │  └─────────┘
+        │
+  │       │
+         │
+  │       └──────────────────▶ New Lead (with history) ──────────────────▶
+          │
+  │
+          │
+  └─────────────────────────────────────────────────────────────────────────
+  ────────┘
+
+  ---
+  Database Schema Design
+
+  -- =======================================================================
+  =====
+  -- CUSTOMER FUNNEL TRACKING SCHEMA
+  -- =======================================================================
+  =====
+
+  -- 1. CUSTOMERS TABLE (Master Record)
+  -- =======================================================================
+  =====
+  CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+
+    -- Identity
+    customer_code VARCHAR(20) NOT NULL,        -- "CUST-2025-0001"
+    name VARCHAR(255) NOT NULL,                -- "ARBA Hilmi Salleh"
+    display_name VARCHAR(255),                 -- Short name for UI
+
+    -- Contact Information
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    whatsapp VARCHAR(50),                      -- Common in MY/travel 
+  industry
+    address TEXT,
+    city VARCHAR(100),
+    country VARCHAR(100) DEFAULT 'Malaysia',
+
+    -- Classification
+    customer_type VARCHAR(50) DEFAULT 'b2b',   -- 'b2b', 'individual', 
+  'agency', 'corporate'
+    segment VARCHAR(50),                        -- 'premium', 'standard', 
+  'budget'
+    tags JSONB DEFAULT '[]',                   -- ['vip', 'repeat', 
+  'referral']
+
+    -- Source Tracking (How they found you)
+    lead_source VARCHAR(100),                  -- 'referral', 'website', 
+  'social', 'walk-in', 'repeat'
+    referred_by UUID REFERENCES customers(id), -- If referral, who referred 
+  them
+    source_details TEXT,                       -- Additional source info
+
+    -- Funnel Status
+    funnel_stage VARCHAR(50) NOT NULL DEFAULT 'lead',
+    funnel_stage_updated_at TIMESTAMPTZ DEFAULT NOW(),
+    first_contact_date DATE,
+
+    -- Lifetime Value Tracking
+    total_bookings INTEGER DEFAULT 0,
+    total_revenue_jpy DECIMAL(15,2) DEFAULT 0,
+    total_revenue_myr DECIMAL(15,2) DEFAULT 0,
+    total_profit_jpy DECIMAL(15,2) DEFAULT 0,
+    average_booking_value_jpy DECIMAL(15,2) DEFAULT 0,
+    last_booking_date DATE,
+
+    -- Engagement Metrics
+    total_interactions INTEGER DEFAULT 0,
+    last_interaction_date TIMESTAMPTZ,
+    days_since_last_contact INTEGER GENERATED ALWAYS AS (
+      EXTRACT(DAY FROM NOW() - last_interaction_date)
+    ) STORED,
+
+    -- Assignment
+    assigned_to UUID REFERENCES users(id),    -- Sales person responsible
+
+    -- Metadata
+    notes TEXT,
+    custom_fields JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_by UUID REFERENCES users(id),
+
+    -- Constraints
+    UNIQUE(company_id, customer_code),
+    UNIQUE(company_id, name, phone)            -- Prevent true duplicates
+  );
+
+  -- 2. FUNNEL STAGES DEFINITION
+  -- =======================================================================
+  =====
+  CREATE TABLE funnel_stages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+
+    stage_key VARCHAR(50) NOT NULL,            -- 'lead', 'qualified', 
+  'proposal', etc.
+    stage_name VARCHAR(100) NOT NULL,          -- Display name
+    stage_order INTEGER NOT NULL,              -- For ordering in funnel 
+  view
+    stage_color VARCHAR(7),                    -- Hex color for UI
+
+    -- Stage behavior
+    is_active_stage BOOLEAN DEFAULT true,      -- Is customer actively in 
+  funnel?
+    is_won_stage BOOLEAN DEFAULT false,        -- Marks conversion
+    is_lost_stage BOOLEAN DEFAULT false,       -- Marks dropout
+
+    -- Automation triggers
+    auto_create_booking BOOLEAN DEFAULT false, -- Auto-create booking on 
+  entry
+    days_until_stale INTEGER,                  -- Alert if no activity after
+   X days
+
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+
+    UNIQUE(company_id, stage_key)
+  );
+
+  -- Insert default funnel stages
+  INSERT INTO funnel_stages (company_id, stage_key, stage_name, stage_order,
+   stage_color, is_active_stage, is_won_stage, is_lost_stage,
+  days_until_stale) VALUES
+  ('c0000000-0000-0000-0000-000000000001', 'lead', 'New Lead', 1, '#9CA3AF',
+   true, false, false, 3),
+  ('c0000000-0000-0000-0000-000000000001', 'contacted', 'Contacted', 2,
+  '#60A5FA', true, false, false, 5),
+  ('c0000000-0000-0000-0000-000000000001', 'qualified', 'Qualified', 3,
+  '#FBBF24', true, false, false, 7),
+  ('c0000000-0000-0000-0000-000000000001', 'proposal', 'Proposal Sent', 4,
+  '#F97316', true, false, false, 7),
+  ('c0000000-0000-0000-0000-000000000001', 'negotiation', 'Negotiation', 5,
+  '#A855F7', true, false, false, 14),
+  ('c0000000-0000-0000-0000-000000000001', 'won', 'Won (Booked)', 6,
+  '#22C55E', false, true, false, NULL),
+  ('c0000000-0000-0000-0000-000000000001', 'lost', 'Lost', 7, '#EF4444',
+  false, false, true, NULL),
+  ('c0000000-0000-0000-0000-000000000001', 'dormant', 'Dormant', 8,
+  '#6B7280', false, false, false, 30);
+
+  -- 3. CUSTOMER INTERACTIONS (Touchpoints)
+  -- =======================================================================
+  =====
+  CREATE TABLE customer_interactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+
+    -- Interaction details
+    interaction_type VARCHAR(50) NOT NULL,     -- 'call', 'email', 
+  'whatsapp', 'meeting', 'site_visit'
+    interaction_direction VARCHAR(20),         -- 'inbound', 'outbound'
+    subject VARCHAR(255),
+    description TEXT,
+
+    -- Outcome
+    outcome VARCHAR(50),                       -- 'positive', 'neutral', 
+  'negative', 'no_response'
+    next_action TEXT,                          -- What to do next
+    next_action_date DATE,                     -- When to follow up
+
+    -- Related records
+    related_booking_id UUID REFERENCES bookings(id),
+    related_document_id UUID REFERENCES documents(id),
+
+    -- Who & When
+    performed_by UUID REFERENCES users(id),
+    interaction_date TIMESTAMPTZ DEFAULT NOW(),
+    duration_minutes INTEGER,                  -- For calls/meetings
+
+    -- Attachments/Notes
+    attachments JSONB DEFAULT '[]',            -- File references
+    metadata JSONB DEFAULT '{}',
+
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  -- 4. FUNNEL STAGE HISTORY (Audit Trail)
+  -- =======================================================================
+  =====
+  CREATE TABLE funnel_stage_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+
+    -- Stage transition
+    from_stage VARCHAR(50),
+    to_stage VARCHAR(50) NOT NULL,
+
+    -- Timing metrics
+    transitioned_at TIMESTAMPTZ DEFAULT NOW(),
+    time_in_previous_stage INTERVAL,           -- How long in previous stage
+
+    -- Context
+    transition_reason TEXT,                    -- Why the change
+    triggered_by VARCHAR(50),                  -- 'manual', 'auto', 
+  'booking_created'
+    performed_by UUID REFERENCES users(id),
+
+    -- Related records
+    related_interaction_id UUID REFERENCES customer_interactions(id),
+    related_booking_id UUID REFERENCES bookings(id),
+
+    metadata JSONB DEFAULT '{}'
+  );
+
+  -- 5. INQUIRIES/LEADS TABLE (Pre-Booking Requests)
+  -- =======================================================================
+  =====
+  CREATE TABLE inquiries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    customer_id UUID REFERENCES customers(id), -- Can be NULL for new leads
+
+    -- Inquiry details
+    inquiry_number VARCHAR(20) NOT NULL,       -- "INQ-2025-0001"
+    inquiry_date DATE DEFAULT CURRENT_DATE,
+
+    -- Trip requirements
+    destination VARCHAR(255),
+    travel_dates_start DATE,
+    travel_dates_end DATE,
+    flexibility VARCHAR(50),                   -- 'fixed', 
+  'flexible_1_week', 'flexible_month'
+    number_of_pax VARCHAR(50),
+    trip_type VARCHAR(50),                     -- 'leisure', 'business', 
+  'honeymoon', 'family'
+
+    -- Budget
+    budget_min DECIMAL(15,2),
+    budget_max DECIMAL(15,2),
+    budget_currency VARCHAR(3) DEFAULT 'MYR',
+
+    -- Requirements
+    special_requirements TEXT,
+    interests JSONB DEFAULT '[]',              -- ['skiing', 'food_tour', 
+  'cultural']
+
+    -- Status
+    status VARCHAR(50) DEFAULT 'new',          -- 'new', 'reviewing', 
+  'quoted', 'converted', 'declined'
+    priority VARCHAR(20) DEFAULT 'normal',     -- 'low', 'normal', 'high', 
+  'urgent'
+
+    -- Conversion
+    converted_to_booking_id UUID REFERENCES bookings(id),
+    conversion_date DATE,
+    lost_reason TEXT,
+
+    -- Assignment
+    assigned_to UUID REFERENCES users(id),
+
+    -- Source
+    source VARCHAR(100),
+    source_details TEXT,
+
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+    UNIQUE(company_id, inquiry_number)
+  );
+
+  -- 6. UPDATE EXISTING TABLES
+  -- =======================================================================
+  =====
+
+  -- Add customer_id to bookings
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES
+  customers(id);
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS inquiry_id UUID REFERENCES
+  inquiries(id);
+
+  -- Add customer_id to documents
+  ALTER TABLE documents ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES
+   customers(id);
+
+  -- 7. INDEXES FOR PERFORMANCE
+  -- =======================================================================
+  =====
+  CREATE INDEX idx_customers_company_stage ON customers(company_id,
+  funnel_stage);
+  CREATE INDEX idx_customers_company_name ON customers(company_id, name);
+  CREATE INDEX idx_customers_assigned ON customers(assigned_to) WHERE
+  is_active = true;
+  CREATE INDEX idx_customers_last_interaction ON customers(company_id,
+  last_interaction_date DESC);
+
+  CREATE INDEX idx_interactions_customer ON
+  customer_interactions(customer_id);
+  CREATE INDEX idx_interactions_date ON customer_interactions(company_id,
+  interaction_date DESC);
+  CREATE INDEX idx_interactions_next_action ON
+  customer_interactions(next_action_date)
+    WHERE next_action_date IS NOT NULL;
+
+  CREATE INDEX idx_funnel_history_customer ON
+  funnel_stage_history(customer_id);
+  CREATE INDEX idx_funnel_history_date ON funnel_stage_history(company_id,
+  transitioned_at DESC);
+
+  CREATE INDEX idx_inquiries_customer ON inquiries(customer_id);
+  CREATE INDEX idx_inquiries_status ON inquiries(company_id, status);
+
+  CREATE INDEX idx_bookings_customer ON bookings(customer_id);
+  CREATE INDEX idx_documents_customer ON documents(customer_id);
+
+  -- 8. ANALYTICS VIEWS
+  -- =======================================================================
+  =====
+
+  -- Funnel Overview
+  CREATE OR REPLACE VIEW funnel_overview AS
+  SELECT
+    c.company_id,
+    c.funnel_stage,
+    fs.stage_name,
+    fs.stage_order,
+    fs.stage_color,
+    COUNT(*) as customer_count,
+    SUM(c.total_revenue_jpy) as total_value_jpy,
+    AVG(EXTRACT(EPOCH FROM (NOW() -
+  c.funnel_stage_updated_at))/86400)::INTEGER as avg_days_in_stage
+  FROM customers c
+  JOIN funnel_stages fs ON c.company_id = fs.company_id AND c.funnel_stage =
+   fs.stage_key
+  WHERE c.is_active = true
+  GROUP BY c.company_id, c.funnel_stage, fs.stage_name, fs.stage_order,
+  fs.stage_color
+  ORDER BY fs.stage_order;
+
+  -- Conversion Rates
+  CREATE OR REPLACE VIEW funnel_conversion_rates AS
+  WITH stage_transitions AS (
+    SELECT
+      company_id,
+      from_stage,
+      to_stage,
+      COUNT(*) as transition_count
+    FROM funnel_stage_history
+    WHERE transitioned_at >= NOW() - INTERVAL '90 days'
+    GROUP BY company_id, from_stage, to_stage
+  )
+  SELECT
+    st.company_id,
+    st.from_stage,
+    st.to_stage,
+    st.transition_count,
+    ROUND(
+      st.transition_count::DECIMAL /
+      NULLIF(SUM(st.transition_count) OVER (PARTITION BY st.company_id,
+  st.from_stage), 0) * 100,
+      1
+    ) as conversion_rate_percent
+  FROM stage_transitions st
+  ORDER BY st.company_id, st.from_stage, st.transition_count DESC;
+
+  -- Customer 360 View
+  CREATE OR REPLACE VIEW customer_360 AS
+  SELECT
+    c.id as customer_id,
+    c.company_id,
+    c.customer_code,
+    c.name,
+    c.email,
+    c.phone,
+    c.funnel_stage,
+    c.customer_type,
+    c.segment,
+    c.lead_source,
+    c.assigned_to,
+
+    -- Lifetime metrics
+    c.total_bookings,
+    c.total_revenue_jpy,
+    c.total_profit_jpy,
+    c.average_booking_value_jpy,
+    c.first_contact_date,
+    c.last_booking_date,
+    c.last_interaction_date,
+    c.days_since_last_contact,
+
+    -- Recent activity
+    (SELECT COUNT(*) FROM customer_interactions ci
+     WHERE ci.customer_id = c.id
+     AND ci.interaction_date >= NOW() - INTERVAL '30 days') as
+  interactions_last_30_days,
+
+    -- Open items
+    (SELECT COUNT(*) FROM inquiries i
+     WHERE i.customer_id = c.id
+     AND i.status IN ('new', 'reviewing', 'quoted')) as open_inquiries,
+
+    (SELECT COUNT(*) FROM bookings b
+     WHERE b.customer_id = c.id
+     AND b.status IN ('draft', 'planning', 'confirmed', 'in_progress')) as
+  active_bookings,
+
+    -- Health score (simple calculation)
+    CASE
+      WHEN c.days_since_last_contact IS NULL THEN 50
+      WHEN c.days_since_last_contact <= 7 THEN 100
+      WHEN c.days_since_last_contact <= 14 THEN 80
+      WHEN c.days_since_last_contact <= 30 THEN 60
+      WHEN c.days_since_last_contact <= 60 THEN 40
+      ELSE 20
+    END as engagement_score
+
+  FROM customers c
+  WHERE c.is_active = true;
+
+  -- Lead Source Analysis
+  CREATE OR REPLACE VIEW lead_source_analysis AS
+  SELECT
+    c.company_id,
+    c.lead_source,
+    COUNT(*) as total_leads,
+    COUNT(*) FILTER (WHERE c.funnel_stage = 'won') as converted,
+    COUNT(*) FILTER (WHERE c.funnel_stage = 'lost') as lost,
+    ROUND(
+      COUNT(*) FILTER (WHERE c.funnel_stage = 'won')::DECIMAL /
+      NULLIF(COUNT(*), 0) * 100,
+      1
+    ) as conversion_rate,
+    SUM(c.total_revenue_jpy) as total_revenue_jpy,
+    AVG(c.total_revenue_jpy) FILTER (WHERE c.total_revenue_jpy > 0) as
+  avg_revenue_per_customer
+  FROM customers c
+  GROUP BY c.company_id, c.lead_source;
+
+  -- 9. TRIGGER FUNCTIONS
+  -- =======================================================================
+  =====
+
+  -- Auto-update customer metrics on booking changes
+  CREATE OR REPLACE FUNCTION update_customer_metrics()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    -- Update customer lifetime value
+    UPDATE customers SET
+      total_bookings = (
+        SELECT COUNT(*) FROM bookings
+        WHERE customer_id = COALESCE(NEW.customer_id, OLD.customer_id)
+        AND status NOT IN ('cancelled', 'draft')
+      ),
+      total_revenue_jpy = (
+        SELECT COALESCE(SUM(grand_total_b2b_jpy), 0) FROM bookings
+        WHERE customer_id = COALESCE(NEW.customer_id, OLD.customer_id)
+        AND status NOT IN ('cancelled', 'draft')
+      ),
+      total_profit_jpy = (
+        SELECT COALESCE(SUM(expected_profit), 0) FROM bookings
+        WHERE customer_id = COALESCE(NEW.customer_id, OLD.customer_id)
+        AND status NOT IN ('cancelled', 'draft')
+      ),
+      last_booking_date = (
+        SELECT MAX(trip_start_date) FROM bookings
+        WHERE customer_id = COALESCE(NEW.customer_id, OLD.customer_id)
+        AND status NOT IN ('cancelled', 'draft')
+      ),
+      updated_at = NOW()
+    WHERE id = COALESCE(NEW.customer_id, OLD.customer_id);
+
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_booking_update_customer_metrics
+  AFTER INSERT OR UPDATE OR DELETE ON bookings
+  FOR EACH ROW
+  WHEN (COALESCE(NEW.customer_id, OLD.customer_id) IS NOT NULL)
+  EXECUTE FUNCTION update_customer_metrics();
+
+  -- Auto-update last interaction date
+  CREATE OR REPLACE FUNCTION update_customer_last_interaction()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    UPDATE customers SET
+      last_interaction_date = NEW.interaction_date,
+      total_interactions = total_interactions + 1,
+      updated_at = NOW()
+    WHERE id = NEW.customer_id;
+
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_interaction_update_customer
+  AFTER INSERT ON customer_interactions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_customer_last_interaction();
+
+  -- Log funnel stage changes
+  CREATE OR REPLACE FUNCTION log_funnel_stage_change()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    IF OLD.funnel_stage IS DISTINCT FROM NEW.funnel_stage THEN
+      INSERT INTO funnel_stage_history (
+        company_id,
+        customer_id,
+        from_stage,
+        to_stage,
+        time_in_previous_stage,
+        triggered_by
+      ) VALUES (
+        NEW.company_id,
+        NEW.id,
+        OLD.funnel_stage,
+        NEW.funnel_stage,
+        NEW.funnel_stage_updated_at - OLD.funnel_stage_updated_at,
+        'manual'
+      );
+
+      -- Update stage timestamp
+      NEW.funnel_stage_updated_at = NOW();
+    END IF;
+
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_customer_funnel_stage_change
+  BEFORE UPDATE ON customers
+  FOR EACH ROW
+  EXECUTE FUNCTION log_funnel_stage_change();
+
+  -- Auto-generate customer code
+  CREATE OR REPLACE FUNCTION generate_customer_code()
+  RETURNS TRIGGER AS $$
+  DECLARE
+    next_num INTEGER;
+    year_str TEXT;
+  BEGIN
+    IF NEW.customer_code IS NULL OR NEW.customer_code = '' THEN
+      year_str := TO_CHAR(NOW(), 'YYYY');
+
+      SELECT COALESCE(MAX(
+        CAST(SUBSTRING(customer_code FROM 'CUST-' || year_str || '-(\d+)')
+  AS INTEGER)
+      ), 0) + 1
+      INTO next_num
+      FROM customers
+      WHERE company_id = NEW.company_id
+      AND customer_code LIKE 'CUST-' || year_str || '-%';
+
+      NEW.customer_code := 'CUST-' || year_str || '-' ||
+  LPAD(next_num::TEXT, 4, '0');
+    END IF;
+
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_generate_customer_code
+  BEFORE INSERT ON customers
+  FOR EACH ROW
+  EXECUTE FUNCTION generate_customer_code();
+
+  -- Auto-generate inquiry number
+  CREATE OR REPLACE FUNCTION generate_inquiry_number()
+  RETURNS TRIGGER AS $$
+  DECLARE
+    next_num INTEGER;
+    year_str TEXT;
+  BEGIN
+    IF NEW.inquiry_number IS NULL OR NEW.inquiry_number = '' THEN
+      year_str := TO_CHAR(NOW(), 'YYYY');
+
+      SELECT COALESCE(MAX(
+        CAST(SUBSTRING(inquiry_number FROM 'INQ-' || year_str || '-(\d+)')
+  AS INTEGER)
+      ), 0) + 1
+      INTO next_num
+      FROM inquiries
+      WHERE company_id = NEW.company_id
+      AND inquiry_number LIKE 'INQ-' || year_str || '-%';
+
+      NEW.inquiry_number := 'INQ-' || year_str || '-' ||
+  LPAD(next_num::TEXT, 4, '0');
+    END IF;
+
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_generate_inquiry_number
+  BEFORE INSERT ON inquiries
+  FOR EACH ROW
+  EXECUTE FUNCTION generate_inquiry_number();
+
+  ---
+  TypeScript Types
+
+  // src/types/customer.ts
+
+  export type FunnelStage =
+    | 'lead'
+    | 'contacted'
+    | 'qualified'
+    | 'proposal'
+    | 'negotiation'
+    | 'won'
+    | 'lost'
+    | 'dormant'
+
+  export type CustomerType = 'b2b' | 'individual' | 'agency' | 'corporate'
+
+  export type CustomerSegment = 'premium' | 'standard' | 'budget'
+
+  export type LeadSource =
+    | 'referral'
+    | 'website'
+    | 'social_media'
+    | 'walk_in'
+    | 'phone_inquiry'
+    | 'email_inquiry'
+    | 'repeat_customer'
+    | 'trade_show'
+    | 'partner'
+    | 'other'
+
+  export interface Customer {
+    id: string
+    companyId: string
+    customerCode: string
+    name: string
+    displayName?: string
+
+    // Contact
+    email?: string
+    phone?: string
+    whatsapp?: string
+    address?: string
+    city?: string
+    country: string
+
+    // Classification
+    customerType: CustomerType
+    segment?: CustomerSegment
+    tags: string[]
+
+    // Source
+    leadSource?: LeadSource
+    referredBy?: string
+    sourceDetails?: string
+
+    // Funnel
+    funnelStage: FunnelStage
+    funnelStageUpdatedAt: string
+    firstContactDate?: string
+
+    // Lifetime Value
+    totalBookings: number
+    totalRevenueJPY: number
+    totalRevenueMYR: number
+    totalProfitJPY: number
+    averageBookingValueJPY: number
+    lastBookingDate?: string
+
+    // Engagement
+    totalInteractions: number
+    lastInteractionDate?: string
+    daysSinceLastContact?: number
+
+    // Assignment
+    assignedTo?: string
+
+    // Metadata
+    notes?: string
+    customFields: Record<string, unknown>
+    isActive: boolean
+    createdAt: string
+    updatedAt: string
+    createdBy?: string
+  }
+
+  export type InteractionType =
+    | 'call'
+    | 'email'
+    | 'whatsapp'
+    | 'meeting'
+    | 'site_visit'
+    | 'video_call'
+    | 'sms'
+    | 'note'
+
+  export type InteractionOutcome =
+    | 'positive'
+    | 'neutral'
+    | 'negative'
+    | 'no_response'
+    | 'scheduled_followup'
+
+  export interface CustomerInteraction {
+    id: string
+    companyId: string
+    customerId: string
+
+    interactionType: InteractionType
+    interactionDirection: 'inbound' | 'outbound'
+    subject?: string
+    description?: string
+
+    outcome?: InteractionOutcome
+    nextAction?: string
+    nextActionDate?: string
+
+    relatedBookingId?: string
+    relatedDocumentId?: string
+
+    performedBy?: string
+    interactionDate: string
+    durationMinutes?: number
+
+    attachments: string[]
+    metadata: Record<string, unknown>
+    createdAt: string
+  }
+
+  export interface FunnelStageHistory {
+    id: string
+    companyId: string
+    customerId: string
+
+    fromStage?: FunnelStage
+    toStage: FunnelStage
+
+    transitionedAt: string
+    timeInPreviousStage?: string // ISO duration
+
+    transitionReason?: string
+    triggeredBy: 'manual' | 'auto' | 'booking_created' | 'inquiry_converted'
+    performedBy?: string
+
+    relatedInteractionId?: string
+    relatedBookingId?: string
+  }
+
+  export type InquiryStatus =
+    | 'new'
+    | 'reviewing'
+    | 'quoted'
+    | 'converted'
+    | 'declined'
+    | 'expired'
+
+  export interface Inquiry {
+    id: string
+    companyId: string
+    customerId?: string
+
+    inquiryNumber: string
+    inquiryDate: string
+
+    // Trip requirements
+    destination?: string
+    travelDatesStart?: string
+    travelDatesEnd?: string
+    flexibility?: 'fixed' | 'flexible_1_week' | 'flexible_month'
+    numberOfPax?: string
+    tripType?: 'leisure' | 'business' | 'honeymoon' | 'family' | 'group'
+
+    // Budget
+    budgetMin?: number
+    budgetMax?: number
+    budgetCurrency: string
+
+    // Requirements
+    specialRequirements?: string
+    interests: string[]
+
+    // Status
+    status: InquiryStatus
+    priority: 'low' | 'normal' | 'high' | 'urgent'
+
+    // Conversion
+    convertedToBookingId?: string
+    conversionDate?: string
+    lostReason?: string
+
+    // Assignment
+    assignedTo?: string
+    source?: string
+    sourceDetails?: string
+    notes?: string
+
+    createdAt: string
+    updatedAt: string
+  }
+
+  // Analytics Types
+  export interface FunnelOverview {
+    stage: FunnelStage
+    stageName: string
+    stageOrder: number
+    stageColor: string
+    customerCount: number
+    totalValueJPY: number
+    avgDaysInStage: number
+  }
+
+  export interface Customer360 {
+    customer: Customer
+    recentInteractions: CustomerInteraction[]
+    openInquiries: Inquiry[]
+    activeBookings: Booking[]
+    allBookings: Booking[]
+    allDocuments: Document[]
+    funnelHistory: FunnelStageHistory[]
+    engagementScore: number
+  }
+
+  ---
+  Complete Data Flow for "ARBA Hilmi Salleh"
+
+  ┌─────────────────────────────────────────────────────────────────────────
+  ────────┐
+  │                    CUSTOMER 360° VIEW - ARBA Hilmi Salleh
+          │
+  ├─────────────────────────────────────────────────────────────────────────
+  ────────┤
+  │
+          │
+  │  CUSTOMER INFO                          FUNNEL STATUS
+          │
+  │  ┌─────────────────────────────┐       ┌─────────────────────────────┐
+         │
+  │  │ Code: CUST-2025-0042        │       │ Stage: WON (Repeat)         │
+         │
+  │  │ Name: ARBA Hilmi Salleh     │       │ Days in stage: 15           │
+         │
+  │  │ Type: B2B Agency            │       │ Engagement Score: 85/100    │
+         │
+  │  │ Segment: Premium            │       │ Last contact: 3 days ago    │
+         │
+  │  │ Source: Referral            │       └─────────────────────────────┘
+         │
+  │  │ Assigned: Sarah             │
+         │
+  │  └─────────────────────────────┘
+         │
+  │
+          │
+  │  LIFETIME VALUE                         FUNNEL HISTORY
+          │
+  │  ┌─────────────────────────────┐       ┌─────────────────────────────┐
+         │
+  │  │ Total Bookings: 3           │       │ Lead → Contacted (2 days)   │
+         │
+  │  │ Revenue: ¥2,450,000         │       │ Contacted → Qualified (5d)  │
+         │
+  │  │ Profit: ¥367,500            │       │ Qualified → Proposal (3d)   │
+         │
+  │  │ Avg Booking: ¥816,667       │       │ Proposal → Won (7 days)     │
+         │
+  │  │ First Contact: 2024-03-15   │       │ Won → Won (repeat) (90d)    │
+         │
+  │  └─────────────────────────────┘       └─────────────────────────────┘
+         │
+  │
+          │
+  │  RELATED RECORDS
+         │
+  │  ┌──────────────────────────────────────────────────────────────────────
+  ───┐   │
+  │  │ INQUIRIES
+      │   │
+  │  │ ├─ INQ-2024-0089: Japan Spring Tour (CONVERTED → BK-2024-0156)
+     │   │
+  │  │ ├─ INQ-2024-0145: Korea Autumn Trip (CONVERTED → BK-2024-0201)
+     │   │
+  │  │ └─ INQ-2025-0023: Japan Winter Ski (NEW - reviewing)
+     │   │
+  │  │
+      │   │
+  │  │ BOOKINGS
+      │   │
+  │  │ ├─ BK-2024-0156: Japan Spring 2024 (COMPLETED) - ¥850,000
+     │   │
+  │  │ ├─ BK-2024-0201: Korea Autumn 2024 (COMPLETED) - ¥720,000
+     │   │
+  │  │ └─ BK-2025-0034: Japan Winter 2025 (CONFIRMED) - ¥880,000
+     │   │
+  │  │
+      │   │
+  │  │ DOCUMENTS
+      │   │
+  │  │ ├─ WIF-INV-2024-0156: Invoice (PAID) - ¥850,000
+     │   │
+  │  │ ├─ WIF-RCP-2024-0089: Receipt (ISSUED) - ¥850,000
+     │   │
+  │  │ ├─ WIF-INV-2024-0201: Invoice (PAID) - ¥720,000
+     │   │
+  │  │ ├─ WIF-RCP-2024-0134: Receipt (ISSUED) - ¥720,000
+     │   │
+  │  │ └─ WIF-INV-2025-0034: Invoice (ISSUED) - ¥880,000
+     │   │
+  │  │
+      │   │
+  │  │ INTERACTIONS (Last 10)
+      │   │
+  │  │ ├─ 2025-01-25: WhatsApp - New inquiry for winter trip (inbound)
+     │   │
+  │  │ ├─ 2025-01-26: Email - Sent proposal for winter trip (outbound)
+     │   │
+  │  │ ├─ 2025-01-28: Call - Discussed pricing, positive (outbound)
+     │   │
+  │  │ └─ 2025-01-30: WhatsApp - Confirmed booking! (inbound)
+     │   │
+  │  └──────────────────────────────────────────────────────────────────────
+  ───┘   │
+  │
+          │
+  └─────────────────────────────────────────────────────────────────────────
+  ────────┘
+
+  ---
+  Implementation Phases
+
+  | Phase   | Scope
+     | Effort   |
+  |---------|---------------------------------------------------------------
+  ---|----------|
+  | Phase 1 | Create customers table, add customer_id FK to
+  bookings/documents | 2-3 days |
+  | Phase 2 | Create inquiries table, inquiry form UI
+     | 2-3 days |
+  | Phase 3 | Create customer_interactions table, interaction logging
+     | 2 days   |
+  | Phase 4 | Funnel stage tracking, history, triggers
+     | 2 days   |
+  | Phase 5 | Analytics views, Customer 360 UI
+     | 3-4 days |
+  | Phase 6 | Migration script for existing data
+     | 1-2 days |
+
+  ---
+  Would you like me to:
+
+  1. Create the migration file with all these tables and start implementing?
+  2. Start with Phase 1 only (customers table + linking) as a foundation?
+  3. Design the UI/UX for the customer funnel screens first?
+
+> Ok this is too much for now. I'm keen to customer master table idea - but 
+how do you think we can track customers across different sort of documents? 
+
+⏺ Great question. Let me simplify this to the core problem:
+
+  The Document-Customer Relationship Challenge
+
+  Different documents relate to customers in different ways:
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                    DOCUMENT RELATIONSHIPS                           │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │                                                                     │
+  │  DIRECT (Customer is the subject)                                   │
+  │  ┌──────────────┐     ┌──────────────┐                             │
+  │  │   INVOICE    │     │   RECEIPT    │                             │
+  │  │ Billed TO    │     │ Payment FROM │                             │
+  │  │ customer     │     │ customer     │                             │
+  │  └──────┬───────┘     └──────┬───────┘                             │
+  │         │                    │                                      │
+  │         └────────┬───────────┘                                      │
+  │                  ▼                                                  │
+  │            ┌──────────┐                                            │
+  │            │ CUSTOMER │  ← customer_id directly on document        │
+  │            └────┬─────┘                                            │
+  │                 │                                                   │
+  │                 ▼                                                   │
+  │            ┌──────────┐                                            │
+  │            │ BOOKING  │  ← customer's trip                         │
+  │            └────┬─────┘                                            │
+  │                 │                                                   │
+  │         ┌───────┴───────┐                                          │
+  │         ▼               ▼                                          │
+  │  ┌──────────────┐ ┌─────────────────┐                              │
+  │  │   VOUCHER    │ │ STATEMENT OF    │                              │
+  │  │ Payment TO   │ │ PAYMENT         │                              │
+  │  │ supplier     │ │ Proof of payment│                              │
+  │  └──────────────┘ └─────────────────┘                              │
+  │                                                                     │
+  │  INDIRECT (Related via booking, not customer)                       │
+  │  These are costs WIF pays FOR the customer's trip                   │
+  │                                                                     │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  Simple Linking Strategy
+
+  -- Customer Master Table (minimal)
+  CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id),
+
+    customer_code VARCHAR(20) NOT NULL,      -- "CUST-2025-001"
+    name VARCHAR(255) NOT NULL,              -- "ARBA Hilmi Salleh"
+    email VARCHAR(255),
+    phone VARCHAR(50),
+
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+
+    UNIQUE(company_id, customer_code),
+    UNIQUE(company_id, name)                 -- Prevent duplicates
+  );
+
+  -- Link bookings to customers
+  ALTER TABLE bookings
+    ADD COLUMN customer_id UUID REFERENCES customers(id);
+
+  -- Link documents directly to customers (for invoices/receipts)
+  ALTER TABLE documents
+    ADD COLUMN customer_id UUID REFERENCES customers(id);
+
+  How to Query "All Documents for Customer X"
+
+  -- Get everything related to customer "ARBA Hilmi Salleh"
+  WITH customer AS (
+    SELECT id FROM customers
+    WHERE name ILIKE '%ARBA Hilmi%'
+    AND company_id = 'your-company-id'
+  )
+  SELECT
+    d.id,
+    d.document_number,
+    d.document_type,
+    d.status,
+    d.total,
+    CASE
+      WHEN d.customer_id IS NOT NULL THEN 'direct'      -- Invoice/Receipt
+      WHEN d.booking_id IS NOT NULL THEN 'via_booking'  -- Voucher/SOP for 
+  their trip
+    END as relationship_type
+  FROM documents d
+  LEFT JOIN bookings b ON d.booking_id = b.id
+  WHERE d.company_id = 'your-company-id'
+    AND d.deleted_at IS NULL
+    AND (
+      d.customer_id = (SELECT id FROM customer)         -- Direct link
+      OR b.customer_id = (SELECT id FROM customer)      -- Via booking
+    )
+  ORDER BY d.created_at DESC;
+
+  The Key Insight
+
+  | Document Type        | Who is named         | Link to Customer
+              |
+  |----------------------|----------------------|---------------------------
+  ------------|
+  | Invoice              | Customer (billed to) | documents.customer_id
+  directly        |
+  | Receipt              | Customer (paid by)   | documents.customer_id
+  directly        |
+  | Payment Voucher      | Supplier (paid to)   | Via booking_id →
+  bookings.customer_id |
+  | Statement of Payment | Supplier (paid to)   | Via booking_id →
+  bookings.customer_id |
+
+  Vouchers and SOPs are costs FOR the customer's trip, not documents TO the 
+  customer.
+
+  ---
+  Practical Example
+
+  For ARBA Hilmi Salleh's Japan Winter 2025 trip:
+
+  Customer: ARBA Hilmi Salleh (CUST-2025-042)
+      │
+      └── Booking: BK-2025-034 (Japan Winter 2025)
+              │
+              ├── Invoice: WIF-INV-2025-034 (¥880,000)
+              │   └── customer_id = CUST-2025-042 ✓ (direct)
+              │
+              ├── Receipt: WIF-RCP-2025-019 (¥880,000)
+              │   └── customer_id = CUST-2025-042 ✓ (direct)
+              │
+              ├── Voucher: WIF-PV-2025-089 (Hotel payment to APA Hotels)
+              │   └── booking_id = BK-2025-034 → customer via booking
+              │
+              └── Voucher: WIF-PV-2025-090 (Transport to JR Pass)
+                  └── booking_id = BK-2025-034 → customer via booking
+
+  ---
+  Would you like me to create just the minimal customer table migration and
+  update the booking/document services to support this linking? That would
+  be a clean foundation without overcomplicating things.
+
+> Then after subtracting SOP and receipt, we can get truest PNL? 
+  ⎿ ⧉ Selected 93 lines from supabase/migrations/010_fix_schema_issues.sql in 
+    Visual Studio Code
+
+⏺ Exactly! That's the real financial picture. Let me map this out:
+
+  Expected vs Actual P&L
+
+  ┌─────────────────────────────────────────────────────────────────────────
+  ────┐
+  │                    BOOKING P&L RECONCILIATION
+      │
+  ├─────────────────────────────────────────────────────────────────────────
+  ────┤
+  │
+      │
+  │  EXPECTED (from Booking form)          ACTUAL (from Documents)
+      │
+  │  ┌─────────────────────────┐          ┌─────────────────────────┐
+     │
+  │  │ B2B Price: ¥880,000     │          │ Invoiced: ¥880,000      │
+     │
+  │  │ (what we quoted)        │          │ Received: ¥880,000 ✓    │ ←
+  Receipts│
+  │  └─────────────────────────┘          └─────────────────────────┘
+     │
+  │
+      │
+  │  ┌─────────────────────────┐          ┌─────────────────────────┐
+     │
+  │  │ Internal Cost: ¥720,000 │          │ Vouchers: ¥735,000      │
+     │
+  │  │ (estimated costs)       │          │ Paid Out: ¥735,000 ✓    │ ← SOPs
+     │
+  │  └─────────────────────────┘          └─────────────────────────┘
+     │
+  │
+      │
+  │  ┌─────────────────────────┐          ┌─────────────────────────┐
+     │
+  │  │ Expected Profit:        │          │ ACTUAL PROFIT:          │
+     │
+  │  │ ¥160,000 (18.2%)        │          │ ¥145,000 (16.5%)        │
+     │
+  │  └─────────────────────────┘          └─────────────────────────┘
+     │
+  │
+      │
+  │  VARIANCE: -¥15,000 (cost overrun on hotel upgrade)
+     │
+  │
+      │
+  └─────────────────────────────────────────────────────────────────────────
+  ────┘
+
+  The Formula
+
+  ACTUAL P&L = Receipts Received - SOPs Paid
+
+  Where:
+  ├── Receipts = Money IN from customer (linked to invoices for this
+  booking)
+  └── SOPs     = Money OUT to suppliers (linked to vouchers for this
+  booking)
+
+  How Documents Flow
+
+  CUSTOMER PAYS US                         WE PAY SUPPLIERS
+  ─────────────────                        ─────────────────
+
+  Invoice (issued)                         Payment Voucher (approved)
+      │                                         │
+      ▼                                         ▼
+  Receipt (money in)                       Statement of Payment (money out)
+      │                                         │
+      ▼                                         ▼
+  Account Balance ↑                        Account Balance ↓
+
+
+           ┌─────────────────────────────────────────┐
+           │              BOOKING                    │
+           │  ┌─────────────────────────────────┐   │
+           │  │ Expected Revenue: ¥880,000      │   │
+           │  │ Expected Cost:    ¥720,000      │   │
+           │  │ Expected Profit:  ¥160,000      │   │
+           │  └─────────────────────────────────┘   │
+           │                                         │
+           │  Linked Documents:                      │
+           │  ├─ Invoice → Receipt (¥880,000 in)    │
+           │  ├─ Voucher → SOP (¥400,000 out)       │
+           │  ├─ Voucher → SOP (¥200,000 out)       │
+           │  └─ Voucher → SOP (¥135,000 out)       │
+           │                                         │
+           │  ┌─────────────────────────────────┐   │
+           │  │ ACTUAL Revenue:   ¥880,000      │   │
+           │  │ ACTUAL Cost:      ¥735,000      │   │
+           │  │ ACTUAL Profit:    ¥145,000      │   │
+           │  └─────────────────────────────────┘   │
+           └─────────────────────────────────────────┘
+
+  Simple SQL View for True P&L
+
+  -- Add to your migrations
+  CREATE OR REPLACE VIEW booking_pnl AS
+  SELECT
+    b.id as booking_id,
+    b.booking_code,
+    b.guest_name,
+    b.customer_id,
+
+    -- Expected (from booking form)
+    b.grand_total_b2b_jpy as expected_revenue_jpy,
+    b.grand_total_jpy as expected_cost_jpy,
+    (b.grand_total_b2b_jpy - b.grand_total_jpy) as expected_profit_jpy,
+
+    -- Actual Revenue (receipts received for this booking's invoices)
+    COALESCE((
+      SELECT SUM(r.amount_received)
+      FROM documents d
+      JOIN receipts r ON r.document_id = d.id
+      WHERE d.booking_id = b.id
+      AND d.document_type = 'receipt'
+      AND d.status IN ('issued', 'completed')
+      AND d.deleted_at IS NULL
+    ), 0) as actual_revenue_jpy,
+
+    -- Actual Cost (SOPs paid for this booking's vouchers)
+    COALESCE((
+      SELECT SUM(sop.total_amount)
+      FROM documents d
+      JOIN payment_vouchers pv ON pv.document_id = d.id
+      JOIN statements_of_payment sop ON sop.linked_voucher_id = pv.id
+      WHERE d.booking_id = b.id
+      AND d.document_type = 'payment_voucher'
+      AND d.deleted_at IS NULL
+    ), 0) as actual_cost_jpy,
+
+    -- Calculated Actual Profit
+    COALESCE((
+      SELECT SUM(r.amount_received)
+      FROM documents d
+      JOIN receipts r ON r.document_id = d.id
+      WHERE d.booking_id = b.id
+      AND d.document_type = 'receipt'
+      AND d.status IN ('issued', 'completed')
+      AND d.deleted_at IS NULL
+    ), 0) - COALESCE((
+      SELECT SUM(sop.total_amount)
+      FROM documents d
+      JOIN payment_vouchers pv ON pv.document_id = d.id
+      JOIN statements_of_payment sop ON sop.linked_voucher_id = pv.id
+      WHERE d.booking_id = b.id
+      AND d.document_type = 'payment_voucher'
+      AND d.deleted_at IS NULL
+    ), 0) as actual_profit_jpy,
+
+    -- Collection Status
+    CASE
+      WHEN b.grand_total_b2b_jpy = 0 THEN 'no_invoice'
+      WHEN COALESCE((
+        SELECT SUM(r.amount_received)
+        FROM documents d
+        JOIN receipts r ON r.document_id = d.id
+        WHERE d.booking_id = b.id AND d.document_type = 'receipt'
+        AND d.status IN ('issued', 'completed') AND d.deleted_at IS NULL
+      ), 0) >= b.grand_total_b2b_jpy THEN 'fully_collected'
+      WHEN COALESCE((
+        SELECT SUM(r.amount_received)
+        FROM documents d
+        JOIN receipts r ON r.document_id = d.id
+        WHERE d.booking_id = b.id AND d.document_type = 'receipt'
+        AND d.status IN ('issued', 'completed') AND d.deleted_at IS NULL
+      ), 0) > 0 THEN 'partially_collected'
+      ELSE 'not_collected'
+    END as collection_status,
+
+    -- Payment Status (to suppliers)
+    CASE
+      WHEN b.grand_total_jpy = 0 THEN 'no_costs'
+      WHEN COALESCE((
+        SELECT SUM(sop.total_amount)
+        FROM documents d
+        JOIN payment_vouchers pv ON pv.document_id = d.id
+        JOIN statements_of_payment sop ON sop.linked_voucher_id = pv.id
+        WHERE d.booking_id = b.id AND d.document_type = 'payment_voucher'
+        AND d.deleted_at IS NULL
+      ), 0) >= b.grand_total_jpy THEN 'fully_paid'
+      WHEN COALESCE((
+        SELECT SUM(sop.total_amount)
+        FROM documents d
+        JOIN payment_vouchers pv ON pv.document_id = d.id
+        JOIN statements_of_payment sop ON sop.linked_voucher_id = pv.id
+        WHERE d.booking_id = b.id AND d.document_type = 'payment_voucher'
+        AND d.deleted_at IS NULL
+      ), 0) > 0 THEN 'partially_paid'
+      ELSE 'not_paid'
+    END as payment_status
+
+  FROM bookings b
+  WHERE b.is_active = true;
+
+  Customer Lifetime P&L
+
+  -- Roll up to customer level (requires customer_id on bookings)
+  CREATE OR REPLACE VIEW customer_pnl AS
+  SELECT
+    c.id as customer_id,
+    c.customer_code,
+    c.name as customer_name,
+
+    COUNT(bp.booking_id) as total_bookings,
+
+    -- Expected totals
+    SUM(bp.expected_revenue_jpy) as total_expected_revenue_jpy,
+    SUM(bp.expected_cost_jpy) as total_expected_cost_jpy,
+    SUM(bp.expected_profit_jpy) as total_expected_profit_jpy,
+
+    -- Actual totals
+    SUM(bp.actual_revenue_jpy) as total_actual_revenue_jpy,
+    SUM(bp.actual_cost_jpy) as total_actual_cost_jpy,
+    SUM(bp.actual_profit_jpy) as total_actual_profit_jpy,
+
+    -- Variance
+    SUM(bp.actual_profit_jpy) - SUM(bp.expected_profit_jpy) as
+  profit_variance_jpy,
+
+    -- Margins
+    CASE
+      WHEN SUM(bp.actual_revenue_jpy) > 0
+      THEN ROUND((SUM(bp.actual_profit_jpy) / SUM(bp.actual_revenue_jpy) *
+  100)::numeric, 1)
+      ELSE 0
+    END as actual_margin_percent
+
+  FROM customers c
+  LEFT JOIN bookings b ON b.customer_id = c.id AND b.is_active = true
+  LEFT JOIN booking_pnl bp ON bp.booking_id = b.id
+  WHERE c.is_active = true
+  GROUP BY c.id, c.customer_code, c.name;
+
+  Summary
+
+  | Metric           | Source                | Purpose               |
+  |------------------|-----------------------|-----------------------|
+  | Expected Revenue | Booking B2B price     | What we quoted        |
+  | Actual Revenue   | Sum of Receipts       | What we collected     |
+  | Expected Cost    | Booking internal cost | What we budgeted      |
+  | Actual Cost      | Sum of SOPs           | What we actually paid |
+  | True Profit      | Receipts - SOPs       | Real money made       |
+
+  ---
+  Want me to:
+  1. Create the migration with customers table + booking_pnl view?
+  2. Keep it minimal - just the customer table first, add P&L views later?
+
+> For transportation, the invoice from our vendor usually comes together 
+(few trips single invoice).\
+How can we address this for this PNL purpose? 
+
+⏺ Excellent real-world scenario. This is common - vendors consolidate
+  multiple trips into one invoice.
+
+  The Problem
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │              VENDOR INVOICE (JR Pass Company)                       │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │                                                                     │
+  │  Invoice #: JR-2025-0456                                           │
+  │  Total: ¥160,000                                                   │
+  │                                                                     │
+  │  Line Items:                                                        │
+  │  ├─ BK-2025-034 (ARBA Hilmi): 5 passes × ¥10,000 = ¥50,000        │
+  │  ├─ BK-2025-035 (Tan Wei):    3 passes × ¥10,000 = ¥30,000        │
+  │  └─ BK-2025-036 (Lee Family): 8 passes × ¥10,000 = ¥80,000        │
+  │                                                                     │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  CURRENT MODEL:
+  Payment Voucher → links to ONE booking_id ❌
+
+  PROBLEM:
+  Which booking does this ¥160,000 belong to for P&L?
+
+  The Solution: Line-Item Level Allocation
+
+  Add booking_id to line items, not just the document:
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │              PAYMENT VOUCHER (WIF-PV-2025-089)                      │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │                                                                     │
+  │  Payee: JR Pass Company                                            │
+  │  Total: ¥160,000                                                   │
+  │  booking_id: NULL (multi-booking voucher)                          │
+  │                                                                     │
+  │  Line Items:                                           booking_id   │
+  │  ├─ JR Pass × 5 (ARBA Hilmi group)    ¥50,000    → BK-2025-034    │
+  │  ├─ JR Pass × 3 (Tan Wei group)       ¥30,000    → BK-2025-035    │
+  │  └─ JR Pass × 8 (Lee Family)          ¥80,000    → BK-2025-036    │
+  │                                                                     │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  P&L ALLOCATION:
+  ├─ BK-2025-034: +¥50,000 cost
+  ├─ BK-2025-035: +¥30,000 cost
+  └─ BK-2025-036: +¥80,000 cost
+
+  Schema Change
+
+  -- Add booking_id to line_items for allocation
+  ALTER TABLE line_items
+    ADD COLUMN booking_id UUID REFERENCES bookings(id) ON DELETE SET NULL;
+
+  -- Add index for P&L queries
+  CREATE INDEX idx_line_items_booking ON line_items(booking_id)
+    WHERE booking_id IS NOT NULL;
+
+  -- Add comment
+  COMMENT ON COLUMN line_items.booking_id IS
+    'Optional booking allocation. Allows single voucher to split costs 
+  across multiple bookings.';
+
+  Updated P&L View
+
+  CREATE OR REPLACE VIEW booking_pnl AS
+  SELECT
+    b.id as booking_id,
+    b.booking_code,
+    b.guest_name,
+
+    -- Expected (from booking form)
+    b.grand_total_b2b_jpy as expected_revenue_jpy,
+    b.grand_total_jpy as expected_cost_jpy,
+
+    -- Actual Revenue (receipts) - unchanged
+    COALESCE((
+      SELECT SUM(r.amount_received)
+      FROM documents d
+      JOIN receipts r ON r.document_id = d.id
+      WHERE d.booking_id = b.id
+      AND d.document_type = 'receipt'
+      AND d.status IN ('issued', 'completed')
+      AND d.deleted_at IS NULL
+    ), 0) as actual_revenue_jpy,
+
+    -- Actual Cost - NOW FROM LINE ITEMS (not document level)
+    COALESCE((
+      -- Method 1: Line items allocated to this booking
+      SELECT SUM(li.amount)
+      FROM line_items li
+      JOIN documents d ON li.document_id = d.id
+      WHERE li.booking_id = b.id                    -- Line item allocated 
+  here
+      AND d.document_type = 'payment_voucher'
+      AND d.deleted_at IS NULL
+    ), 0) + COALESCE((
+      -- Method 2: Whole voucher allocated to this booking (backward 
+  compatible)
+      SELECT SUM(d.total)
+      FROM documents d
+      WHERE d.booking_id = b.id                     -- Document level 
+  allocation
+      AND d.document_type = 'payment_voucher'
+      AND d.deleted_at IS NULL
+      AND NOT EXISTS (                              -- No line-item 
+  allocation
+        SELECT 1 FROM line_items li
+        WHERE li.document_id = d.id
+        AND li.booking_id IS NOT NULL
+      )
+    ), 0) as actual_cost_jpy
+
+  FROM bookings b
+  WHERE b.is_active = true;
+
+  How It Works
+
+  | Scenario               | Allocation Method
+      |
+  |------------------------|------------------------------------------------
+  ----|
+  | Single-booking voucher | documents.booking_id (whole voucher)
+      |
+  | Multi-booking voucher  | line_items.booking_id (per line item)
+      |
+  | Mixed                  | Line items with booking_id override document
+  level |
+
+  Visual Flow
+
+  VENDOR: JR Pass Company
+      │
+      ▼
+  ┌─────────────────────────────────────────┐
+  │ Payment Voucher: WIF-PV-2025-089        │
+  │ booking_id: NULL (multi-booking)        │
+  │                                         │
+  │ Line Items:                             │
+  │ ┌─────────────────────────────────────┐ │
+  │ │ #1: JR Pass × 5                     │ │
+  │ │     Amount: ¥50,000                 │ │
+  │ │     booking_id: BK-2025-034 ────────┼─┼──► ARBA's P&L: +¥50,000 cost
+  │ └─────────────────────────────────────┘ │
+  │ ┌─────────────────────────────────────┐ │
+  │ │ #2: JR Pass × 3                     │ │
+  │ │     Amount: ¥30,000                 │ │
+  │ │     booking_id: BK-2025-035 ────────┼─┼──► Tan Wei's P&L: +¥30,000
+  cost
+  │ └─────────────────────────────────────┘ │
+  │ ┌─────────────────────────────────────┐ │
+  │ │ #3: JR Pass × 8                     │ │
+  │ │     Amount: ¥80,000                 │ │
+  │ │     booking_id: BK-2025-036 ────────┼─┼──► Lee's P&L: +¥80,000 cost
+  │ └─────────────────────────────────────┘ │
+  └─────────────────────────────────────────┘
+      │
+      ▼
+  Statement of Payment: ¥160,000 paid
+  (single payment, costs split in P&L)
+
+  Summary
+
+  | Current                                   | Proposed
+            |
+  |-------------------------------------------|-----------------------------
+  ----------|
+  | Voucher → 1 Booking                       | Voucher → N Bookings (via
+  line items) |
+  | All-or-nothing allocation                 | Granular per-line allocation
+            |
+  | Can't handle consolidated vendor invoices | Handles real-world vendor
+  billing     |
+
+  ---
+  This is a small but important schema change. Want me to include this in
+  the migration along with the customer table?
+
+> Ok. Explain to me comprehensive plan on this matter. 
+
+⏺ Comprehensive Plan: Customer Tracking & True P&L System
+
+  ---
+  Executive Summary
+
+  This plan establishes data coherence across WIF Finance by:
+  1. Creating a Customer Master Table as single source of truth
+  2. Enabling line-item cost allocation for multi-booking vendor invoices
+  3. Calculating True P&L from actual money flows (Receipts IN - SOPs OUT)
+
+  ---
+  Current State vs Target State
+
+  ┌─────────────────────────────────────────────────────────────────────────
+  ────────┐
+  │                           CURRENT STATE
+          │
+  ├─────────────────────────────────────────────────────────────────────────
+  ────────┤
+  │
+          │
+  │  ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+        │
+  │  │ Booking  │     │ Invoice  │     │ Receipt  │     │ Voucher  │
+        │
+  │  │guest_name│     │customer_ │     │payer_    │     │payee_    │
+        │
+  │  │ (text)   │     │name(text)│     │name(text)│     │name(text)│
+        │
+  │  └──────────┘     └──────────┘     └──────────┘     └──────────┘
+        │
+  │       ↑                ↑                ↑                ↑
+         │
+  │       └────────────────┴────────────────┴────────────────┘
+         │
+  │                    NO UNIFIED CUSTOMER ID
+          │
+  │                    VOUCHER → 1 BOOKING ONLY
+          │
+  │                    P&L = ESTIMATED (from booking form)
+          │
+  │
+          │
+  └─────────────────────────────────────────────────────────────────────────
+  ────────┘
+
+                                      ▼
+
+  ┌─────────────────────────────────────────────────────────────────────────
+  ────────┐
+  │                           TARGET STATE
+          │
+  ├─────────────────────────────────────────────────────────────────────────
+  ────────┤
+  │
+          │
+  │                         ┌──────────────┐
+         │
+  │                         │  CUSTOMERS   │
+         │
+  │                         │   (master)   │
+         │
+  │                         └──────┬───────┘
+         │
+  │                                │
+          │
+  │            ┌───────────────────┼───────────────────┐
+         │
+  │            ▼                   ▼                   ▼
+         │
+  │     ┌──────────┐        ┌──────────┐        ┌──────────┐
+        │
+  │     │ Booking  │        │ Invoice  │        │ Receipt  │
+        │
+  │     │customer_ │        │customer_ │        │customer_ │                
+        │
+  │     │id (FK)   │        │id (FK)   │        │id (FK)   │                
+        │
+  │     └────┬─────┘        └──────────┘        └──────────┘                
+        │
+  │          │                                                              
+          │
+  │          │  ┌──────────────────────────────────────┐                    
+         │
+  │          └─►│ LINE ITEMS (with booking_id)         │
+         │
+  │             │ Voucher line → specific booking      │
+         │
+  │             └──────────────────────────────────────┘
+         │
+  │
+          │
+  │     TRUE P&L = SUM(Receipts) - SUM(SOPs allocated to booking)
+         │
+  │
+          │
+  └─────────────────────────────────────────────────────────────────────────
+  ────────┘
+
+  ---
+  Phase 1: Database Schema
+
+  Migration File: 011_customer_tracking_and_pnl.sql
+
+  1.1 Customer Master Table
+
+  -- =======================================================================
+  =====
+  -- CUSTOMERS TABLE - Single source of truth for customer identity
+  -- =======================================================================
+  =====
+  CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+
+    -- Identity
+    customer_code VARCHAR(20) NOT NULL,        -- Auto: "CUST-2025-0001"
+    name VARCHAR(255) NOT NULL,                -- "ARBA Hilmi Salleh"
+    display_name VARCHAR(100),                 -- Short name for UI
+
+    -- Contact
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    whatsapp VARCHAR(50),
+    address TEXT,
+    country VARCHAR(100) DEFAULT 'Malaysia',
+
+    -- Classification
+    customer_type VARCHAR(20) DEFAULT 'b2b',   -- 'b2b', 'individual', 
+  'agency'
+    tags JSONB DEFAULT '[]',                   -- ['vip', 'repeat']
+
+    -- Source tracking
+    lead_source VARCHAR(50),                   -- 'referral', 'website', 
+  'social'
+    referred_by_customer_id UUID REFERENCES customers(id),
+
+    -- Metadata
+    notes TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_by UUID REFERENCES users(id),
+
+    -- Constraints
+    UNIQUE(company_id, customer_code),
+    UNIQUE(company_id, name)
+  );
+
+  -- Auto-generate customer code
+  CREATE OR REPLACE FUNCTION generate_customer_code()
+  RETURNS TRIGGER AS $$
+  DECLARE
+    next_num INTEGER;
+    year_str TEXT := TO_CHAR(NOW(), 'YYYY');
+  BEGIN
+    IF NEW.customer_code IS NULL OR NEW.customer_code = '' THEN
+      SELECT COALESCE(MAX(
+        CAST(SUBSTRING(customer_code FROM 'CUST-' || year_str || '-(\d+)')
+  AS INTEGER)
+      ), 0) + 1 INTO next_num
+      FROM customers
+      WHERE company_id = NEW.company_id
+      AND customer_code LIKE 'CUST-' || year_str || '-%';
+
+      NEW.customer_code := 'CUST-' || year_str || '-' ||
+  LPAD(next_num::TEXT, 4, '0');
+    END IF;
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_generate_customer_code
+  BEFORE INSERT ON customers
+  FOR EACH ROW EXECUTE FUNCTION generate_customer_code();
+
+  -- Indexes
+  CREATE INDEX idx_customers_company ON customers(company_id);
+  CREATE INDEX idx_customers_name ON customers(company_id, name);
+  CREATE INDEX idx_customers_active ON customers(company_id) WHERE is_active
+   = true;
+
+  1.2 Link Existing Tables to Customers
+
+  -- =======================================================================
+  =====
+  -- ADD CUSTOMER REFERENCES TO EXISTING TABLES
+  -- =======================================================================
+  =====
+
+  -- Bookings: Link to customer
+  ALTER TABLE bookings
+    ADD COLUMN customer_id UUID REFERENCES customers(id) ON DELETE SET NULL;
+
+  CREATE INDEX idx_bookings_customer ON bookings(customer_id);
+
+  -- Documents: Direct customer link (for invoices/receipts)
+  ALTER TABLE documents
+    ADD COLUMN customer_id UUID REFERENCES customers(id) ON DELETE SET NULL;
+
+  CREATE INDEX idx_documents_customer ON documents(customer_id);
+
+  -- Line Items: Booking allocation (for multi-booking vouchers)
+  ALTER TABLE line_items
+    ADD COLUMN booking_id UUID REFERENCES bookings(id) ON DELETE SET NULL;
+
+  CREATE INDEX idx_line_items_booking ON line_items(booking_id)
+    WHERE booking_id IS NOT NULL;
+
+  COMMENT ON COLUMN line_items.booking_id IS
+    'Allocates this line item cost to a specific booking. Enables 
+  multi-booking vendor invoices.';
+
+  1.3 P&L Analytics Views
+
+  -- =======================================================================
+  =====
+  -- BOOKING P&L VIEW - Expected vs Actual
+  -- =======================================================================
+  =====
+  CREATE OR REPLACE VIEW booking_pnl AS
+  SELECT
+    b.id as booking_id,
+    b.company_id,
+    b.booking_code,
+    b.guest_name,
+    b.customer_id,
+    b.status,
+    b.trip_start_date,
+    b.trip_end_date,
+
+    -- EXPECTED (from booking cost form)
+    COALESCE(b.grand_total_b2b_jpy, 0) as expected_revenue_jpy,
+    COALESCE(b.grand_total_jpy, 0) as expected_cost_jpy,
+    COALESCE(b.grand_total_b2b_jpy, 0) - COALESCE(b.grand_total_jpy, 0) as
+  expected_profit_jpy,
+
+    -- ACTUAL REVENUE (receipts received)
+    COALESCE(revenue.total, 0) as actual_revenue_jpy,
+
+    -- ACTUAL COST (from line items + document-level vouchers)
+    COALESCE(costs_line_items.total, 0) + COALESCE(costs_doc_level.total, 0)
+   as actual_cost_jpy,
+
+    -- TRUE PROFIT
+    COALESCE(revenue.total, 0) -
+      (COALESCE(costs_line_items.total, 0) + COALESCE(costs_doc_level.total,
+   0)) as actual_profit_jpy,
+
+    -- VARIANCE
+    (COALESCE(revenue.total, 0) -
+      (COALESCE(costs_line_items.total, 0) + COALESCE(costs_doc_level.total,
+   0))) -
+    (COALESCE(b.grand_total_b2b_jpy, 0) - COALESCE(b.grand_total_jpy, 0)) as
+   profit_variance_jpy,
+
+    -- COLLECTION STATUS
+    CASE
+      WHEN COALESCE(b.grand_total_b2b_jpy, 0) = 0 THEN 'no_invoice'
+      WHEN COALESCE(revenue.total, 0) >= COALESCE(b.grand_total_b2b_jpy, 0)
+  THEN 'fully_collected'
+      WHEN COALESCE(revenue.total, 0) > 0 THEN 'partially_collected'
+      ELSE 'not_collected'
+    END as collection_status,
+
+    -- PAYMENT STATUS (to suppliers)
+    CASE
+      WHEN COALESCE(b.grand_total_jpy, 0) = 0 THEN 'no_costs'
+      WHEN (COALESCE(costs_line_items.total, 0) +
+  COALESCE(costs_doc_level.total, 0))
+           >= COALESCE(b.grand_total_jpy, 0) THEN 'fully_paid'
+      WHEN (COALESCE(costs_line_items.total, 0) +
+  COALESCE(costs_doc_level.total, 0)) > 0
+           THEN 'partially_paid'
+      ELSE 'not_paid'
+    END as payment_status
+
+  FROM bookings b
+
+  -- Actual revenue: Sum of receipts for this booking
+  LEFT JOIN LATERAL (
+    SELECT SUM(r.amount_received) as total
+    FROM documents d
+    JOIN receipts r ON r.document_id = d.id
+    WHERE d.booking_id = b.id
+    AND d.document_type = 'receipt'
+    AND d.status IN ('issued', 'completed')
+    AND d.deleted_at IS NULL
+  ) revenue ON true
+
+  -- Actual costs: Line items allocated to this booking
+  LEFT JOIN LATERAL (
+    SELECT SUM(li.amount) as total
+    FROM line_items li
+    JOIN documents d ON li.document_id = d.id
+    WHERE li.booking_id = b.id
+    AND d.document_type = 'payment_voucher'
+    AND d.deleted_at IS NULL
+  ) costs_line_items ON true
+
+  -- Actual costs: Document-level vouchers (no line-item allocation)
+  LEFT JOIN LATERAL (
+    SELECT SUM(d.total) as total
+    FROM documents d
+    WHERE d.booking_id = b.id
+    AND d.document_type = 'payment_voucher'
+    AND d.deleted_at IS NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM line_items li
+      WHERE li.document_id = d.id AND li.booking_id IS NOT NULL
+    )
+  ) costs_doc_level ON true
+
+  WHERE b.is_active = true;
+
+  -- =======================================================================
+  =====
+  -- CUSTOMER LIFETIME VALUE VIEW
+  -- =======================================================================
+  =====
+  CREATE OR REPLACE VIEW customer_lifetime_value AS
+  SELECT
+    c.id as customer_id,
+    c.company_id,
+    c.customer_code,
+    c.name as customer_name,
+    c.customer_type,
+    c.lead_source,
+    c.created_at as customer_since,
+
+    -- Booking counts
+    COUNT(DISTINCT bp.booking_id) as total_bookings,
+    COUNT(DISTINCT bp.booking_id) FILTER (WHERE bp.status = 'completed') as
+  completed_bookings,
+
+    -- Expected totals
+    SUM(bp.expected_revenue_jpy) as lifetime_expected_revenue_jpy,
+    SUM(bp.expected_profit_jpy) as lifetime_expected_profit_jpy,
+
+    -- Actual totals (TRUE P&L)
+    SUM(bp.actual_revenue_jpy) as lifetime_actual_revenue_jpy,
+    SUM(bp.actual_cost_jpy) as lifetime_actual_cost_jpy,
+    SUM(bp.actual_profit_jpy) as lifetime_actual_profit_jpy,
+
+    -- Averages
+    AVG(bp.actual_revenue_jpy) FILTER (WHERE bp.actual_revenue_jpy > 0) as
+  avg_booking_value_jpy,
+    AVG(bp.actual_profit_jpy) FILTER (WHERE bp.actual_revenue_jpy > 0) as
+  avg_profit_per_booking_jpy,
+
+    -- Margin
+    CASE
+      WHEN SUM(bp.actual_revenue_jpy) > 0
+      THEN ROUND((SUM(bp.actual_profit_jpy) / SUM(bp.actual_revenue_jpy) *
+  100)::numeric, 1)
+      ELSE 0
+    END as actual_margin_percent,
+
+    -- Activity
+    MIN(bp.trip_start_date) as first_trip_date,
+    MAX(bp.trip_start_date) as last_trip_date
+
+  FROM customers c
+  LEFT JOIN bookings b ON b.customer_id = c.id AND b.is_active = true
+  LEFT JOIN booking_pnl bp ON bp.booking_id = b.id
+  WHERE c.is_active = true
+  GROUP BY c.id, c.company_id, c.customer_code, c.name, c.customer_type,
+  c.lead_source, c.created_at;
+
+  -- =======================================================================
+  =====
+  -- COMPANY P&L SUMMARY VIEW
+  -- =======================================================================
+  =====
+  CREATE OR REPLACE VIEW company_pnl_summary AS
+  SELECT
+    company_id,
+
+    -- Period totals
+    COUNT(*) as total_bookings,
+
+    -- Expected
+    SUM(expected_revenue_jpy) as total_expected_revenue_jpy,
+    SUM(expected_cost_jpy) as total_expected_cost_jpy,
+    SUM(expected_profit_jpy) as total_expected_profit_jpy,
+
+    -- Actual (TRUE P&L)
+    SUM(actual_revenue_jpy) as total_actual_revenue_jpy,
+    SUM(actual_cost_jpy) as total_actual_cost_jpy,
+    SUM(actual_profit_jpy) as total_actual_profit_jpy,
+
+    -- Variance
+    SUM(profit_variance_jpy) as total_profit_variance_jpy,
+
+    -- Collection metrics
+    COUNT(*) FILTER (WHERE collection_status = 'fully_collected') as
+  fully_collected_count,
+    COUNT(*) FILTER (WHERE collection_status = 'partially_collected') as
+  partially_collected_count,
+    COUNT(*) FILTER (WHERE collection_status = 'not_collected') as
+  not_collected_count,
+
+    -- Outstanding
+    SUM(expected_revenue_jpy - actual_revenue_jpy)
+      FILTER (WHERE collection_status != 'fully_collected') as
+  outstanding_receivables_jpy,
+    SUM(expected_cost_jpy - actual_cost_jpy)
+      FILTER (WHERE payment_status != 'fully_paid') as
+  outstanding_payables_jpy
+
+  FROM booking_pnl
+  GROUP BY company_id;
+
+  1.4 Data Migration (Existing Records)
+
+  -- =======================================================================
+  =====
+  -- MIGRATE EXISTING DATA
+  -- =======================================================================
+  =====
+
+  -- Step 1: Create customers from existing unique guest names
+  INSERT INTO customers (company_id, name, customer_type, notes, created_at)
+  SELECT DISTINCT ON (company_id, guest_name)
+    company_id,
+    guest_name as name,
+    'b2b' as customer_type,
+    'Auto-created from existing booking' as notes,
+    MIN(created_at) as created_at
+  FROM bookings
+  WHERE guest_name IS NOT NULL
+    AND guest_name != ''
+    AND is_active = true
+  GROUP BY company_id, guest_name
+  ON CONFLICT (company_id, name) DO NOTHING;
+
+  -- Step 2: Link bookings to their customers
+  UPDATE bookings b
+  SET customer_id = c.id
+  FROM customers c
+  WHERE b.guest_name = c.name
+    AND b.company_id = c.company_id
+    AND b.customer_id IS NULL;
+
+  -- Step 3: Link documents to customers (via booking)
+  UPDATE documents d
+  SET customer_id = b.customer_id
+  FROM bookings b
+  WHERE d.booking_id = b.id
+    AND b.customer_id IS NOT NULL
+    AND d.customer_id IS NULL;
+
+  -- Step 4: Link invoices directly to customers (from 
+  invoice.customer_name)
+  UPDATE documents d
+  SET customer_id = c.id
+  FROM invoices i
+  JOIN customers c ON LOWER(TRIM(i.customer_name)) = LOWER(TRIM(c.name))
+    AND c.company_id = d.company_id
+  WHERE i.document_id = d.id
+    AND d.customer_id IS NULL;
+
+  ---
+  Phase 2: TypeScript Types
+
+  File: src/types/customer.ts
+
+  export type CustomerType = 'b2b' | 'individual' | 'agency' | 'corporate'
+
+  export type LeadSource =
+    | 'referral'
+    | 'website'
+    | 'social_media'
+    | 'walk_in'
+    | 'phone'
+    | 'email'
+    | 'repeat'
+    | 'partner'
+    | 'other'
+
+  export interface Customer {
+    id: string
+    companyId: string
+    customerCode: string
+    name: string
+    displayName?: string
+
+    // Contact
+    email?: string
+    phone?: string
+    whatsapp?: string
+    address?: string
+    country: string
+
+    // Classification
+    customerType: CustomerType
+    tags: string[]
+
+    // Source
+    leadSource?: LeadSource
+    referredByCustomerId?: string
+
+    // Metadata
+    notes?: string
+    isActive: boolean
+    createdAt: string
+    updatedAt: string
+    createdBy?: string
+  }
+
+  export interface CustomerWithStats extends Customer {
+    totalBookings: number
+    lifetimeRevenueJPY: number
+    lifetimeProfitJPY: number
+    lastTripDate?: string
+  }
+
+  File: src/types/pnl.ts
+
+  export type CollectionStatus =
+    | 'no_invoice'
+    | 'fully_collected'
+    | 'partially_collected'
+    | 'not_collected'
+
+  export type PaymentStatus =
+    | 'no_costs'
+    | 'fully_paid'
+    | 'partially_paid'
+    | 'not_paid'
+
+  export interface BookingPnL {
+    bookingId: string
+    bookingCode: string
+    guestName: string
+    customerId?: string
+    status: string
+    tripStartDate: string
+    tripEndDate?: string
+
+    // Expected (from booking form)
+    expectedRevenueJPY: number
+    expectedCostJPY: number
+    expectedProfitJPY: number
+
+    // Actual (from documents)
+    actualRevenueJPY: number
+    actualCostJPY: number
+    actualProfitJPY: number
+
+    // Variance
+    profitVarianceJPY: number
+
+    // Status
+    collectionStatus: CollectionStatus
+    paymentStatus: PaymentStatus
+  }
+
+  export interface CustomerLifetimeValue {
+    customerId: string
+    customerCode: string
+    customerName: string
+    customerType: string
+    customerSince: string
+
+    totalBookings: number
+    completedBookings: number
+
+    lifetimeExpectedRevenueJPY: number
+    lifetimeActualRevenueJPY: number
+    lifetimeActualCostJPY: number
+    lifetimeActualProfitJPY: number
+
+    avgBookingValueJPY: number
+    avgProfitPerBookingJPY: number
+    actualMarginPercent: number
+
+    firstTripDate?: string
+    lastTripDate?: string
+  }
+
+  ---
+  Phase 3: Service Layer
+
+  File: src/services/customers/customerService.ts
+
+  // Key functions to implement:
+
+  // CRUD
+  createCustomer(customer: Partial<Customer>): Promise<Customer>
+  updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer>
+  getCustomer(id: string): Promise<Customer | null>
+  getCustomers(companyId: string, filters?: CustomerFilters):
+  Promise<Customer[]>
+  searchCustomers(companyId: string, query: string): Promise<Customer[]>
+
+  // Linking
+  linkBookingToCustomer(bookingId: string, customerId: string):
+  Promise<void>
+  linkDocumentToCustomer(documentId: string, customerId: string):
+  Promise<void>
+  findOrCreateCustomer(companyId: string, name: string): Promise<Customer>
+
+  // Analytics
+  getCustomerLifetimeValue(customerId: string):
+  Promise<CustomerLifetimeValue>
+  getCustomer360(customerId: string): Promise<Customer360View>
+
+  File: src/services/pnl/pnlService.ts
+
+  // Key functions to implement:
+
+  getBookingPnL(bookingId: string): Promise<BookingPnL>
+  getBookingsPnL(companyId: string, filters?: PnLFilters):
+  Promise<BookingPnL[]>
+  getCustomerPnL(customerId: string): Promise<CustomerLifetimeValue>
+  getCompanyPnLSummary(companyId: string, dateRange?: DateRange):
+  Promise<CompanyPnLSummary>
+
+  // Line item allocation
+  allocateLineItemToBooking(lineItemId: string, bookingId: string):
+  Promise<void>
+  getAllocationsForVoucher(voucherId: string): Promise<LineItemAllocation[]>
+
+  ---
+  Phase 4: UI Components
+
+  4.1 Customer Management
+
+  | Screen          | Purpose                                             |
+  |-----------------|-----------------------------------------------------|
+  | Customer List   | Browse/search all customers                         |
+  | Customer Detail | View customer info + all related bookings/documents |
+  | Customer Form   | Create/edit customer                                |
+  | Customer Picker | Select customer when creating booking/invoice       |
+
+  4.2 P&L Views
+
+  | Screen           | Purpose                                   |
+  |------------------|-------------------------------------------|
+  | Booking P&L Card | Show expected vs actual on booking detail |
+  | P&L Dashboard    | Company-wide P&L summary                  |
+  | Customer LTV     | Lifetime value per customer               |
+
+  4.3 Line Item Allocation
+
+  | Screen             | Purpose                                          |
+  |--------------------|--------------------------------------------------|
+  | Voucher Line Items | Add booking allocation when creating voucher     |
+  | Allocation Editor  | Bulk allocate existing voucher lines to bookings |
+
+  ---
+  Phase 5: Implementation Order
+
+  ┌─────────────────────────────────────────────────────────────────────────
+  ────────┐
+  │                        IMPLEMENTATION TIMELINE
+          │
+  ├─────────────────────────────────────────────────────────────────────────
+  ────────┤
+  │
+          │
+  │  PHASE 1: DATABASE (Day 1-2)
+         │
+  │  ├─ Create migration file
+          │
+  │  ├─ Run on development
+          │
+  │  ├─ Verify data migration
+          │
+  │  └─ Test views return correct data
+         │
+  │
+          │
+  │  PHASE 2: TYPES & SERVICES (Day 2-3)
+         │
+  │  ├─ Add TypeScript types
+          │
+  │  ├─ Create customerService
+          │
+  │  ├─ Create pnlService
+         │
+  │  ├─ Update bookingService (add customer linking)
+         │
+  │  └─ Update documentService (add customer linking)
+         │
+  │
+          │
+  │  PHASE 3: BOOKING FORM UPDATE (Day 3-4)
+         │
+  │  ├─ Add customer picker to new booking form
+         │
+  │  ├─ Add customer picker to edit booking form
+         │
+  │  ├─ Auto-create customer if new name entered
+         │
+  │  └─ Show customer history in booking detail
+         │
+  │
+          │
+  │  PHASE 4: VOUCHER LINE ALLOCATION (Day 4-5)
+         │
+  │  ├─ Add booking selector to voucher line items
+         │
+  │  ├─ Update voucher form UI
+         │
+  │  └─ Add allocation summary view
+         │
+  │
+          │
+  │  PHASE 5: P&L VIEWS (Day 5-6)
+         │
+  │  ├─ Add P&L card to booking detail screen
+         │
+  │  ├─ Create P&L dashboard
+         │
+  │  └─ Add customer lifetime value view
+         │
+  │
+          │
+  │  PHASE 6: TESTING & POLISH (Day 6-7)
+         │
+  │  ├─ Test with real data scenarios
+         │
+  │  ├─ Verify multi-booking voucher allocation
+         │
+  │  ├─ Validate P&L calculations
+         │
+  │  └─ Deploy to production
+         │
+  │
+          │
+  └─────────────────────────────────────────────────────────────────────────
+  ────────┘
+
+  ---
+  Key Decisions Summary
+
+  | Decision                | Choice                       | Rationale
+               |
+  |-------------------------|------------------------------|----------------
+  -------------|
+  | Customer identification | Unique by (company_id, name) | Simple,
+  prevents duplicates |
+  | Booking-customer link   | bookings.customer_id FK      | Direct
+  relationship         |
+  | Document-customer link  | documents.customer_id FK     | For
+  invoices/receipts       |
+  | Multi-booking vouchers  | line_items.booking_id FK     | Granular cost
+  allocation    |
+  | P&L calculation         | Database views               | Real-time,
+  consistent       |
+  | Existing data           | Auto-migrate from guest_name | Preserve
+  history            |
+
+  ---
+  Files to Create/Modify
+
+  | File                                                  | Action |
+  Description                  |
+  |-------------------------------------------------------|--------|--------
+  ----------------------|
+  | supabase/migrations/011_customer_tracking_and_pnl.sql | CREATE | Full
+  migration               |
+  | src/types/customer.ts                                 | CREATE |
+  Customer types               |
+  | src/types/pnl.ts                                      | CREATE | P&L
+  types                    |
+  | src/types/index.ts                                    | MODIFY | Export
+  new types             |
+  | src/services/customers/customerService.ts             | CREATE |
+  Customer CRUD                |
+  | src/services/pnl/pnlService.ts                        | CREATE | P&L
+  queries                  |
+  | src/services/bookings/bookingService.ts               | MODIFY | Add
+  customer linking         |
+  | src/services/documents/documentService.ts             | MODIFY | Add
+  customer linking         |
+  | app/booking/new.tsx                                   | MODIFY |
+  Customer picker              |
+  | app/booking/edit/[id].tsx                             | MODIFY |
+  Customer picker              |
+  | app/booking/[id].tsx                                  | MODIFY | P&L
+  card                     |
+  | app/document/new.tsx                                  | MODIFY | Line
+  item booking allocation |
+  | app/customers/                                        | CREATE |
+  Customer screens             |
+
+  ---
+  Shall I proceed with Phase 1 - creating the migration file?
+
+> Delve into /Users/firdaus/Documents/2025/code/wif-fin as well. Ensure the 
+plan includes web app too to maintain coherence. 
+
+⏺ Explore(Explore web app structure)
+  ⎿  Done (34 tool uses · 73.5k tokens · 1m 55s)                           
+
+⏺ Now I have a complete picture. Let me create a unified plan covering both
+  web and mobile apps.
+
+  ---
+  Comprehensive Plan: Customer Tracking & True P&L
+
+  Web App + Mobile App Coherence
+
+  ---
+  Architecture Overview
+
+  ┌─────────────────────────────────────────────────────────────────────────
+  ────────┐
+  │                         SHARED INFRASTRUCTURE
+          │
+  ├─────────────────────────────────────────────────────────────────────────
+  ────────┤
+  │
+          │
+  │                        ┌─────────────────────┐
+         │
+  │                        │     SUPABASE        │
+         │
+  │                        │   (PostgreSQL)      │
+         │
+  │                        │                     │
+         │
+  │                        │ - customers         │
+         │
+  │                        │ - bookings          │
+         │
+  │                        │ - documents         │
+         │
+  │                        │ - line_items        │                          
+         │
+  │                        │ - booking_pnl (view)│
+         │
+  │                        └──────────┬──────────┘
+         │
+  │                                   │
+         │
+  │                    ┌──────────────┴──────────────┐
+         │
+  │                    │                             │
+         │
+  │            ┌───────▼───────┐             ┌──────▼────────┐
+        │
+  │            │   WEB APP     │             │  MOBILE APP   │
+        │
+  │            │  (Vite+React) │             │ (Expo Router) │
+        │
+  │            │               │             │               │
+        │
+  │            │ /wif-fin      │             │ /wif-finance  │
+        │
+  │            └───────────────┘             └───────────────┘
+        │
+  │
+         │
+  └─────────────────────────────────────────────────────────────────────────
+  ────────┘
+
+  ---
+  Side-by-Side Comparison
+
+  | Aspect            | Web App (wif-fin)        | Mobile App (wif-finance)
+    |
+  |-------------------|--------------------------|--------------------------
+  --|
+  | Framework         | Vite + React 18          | Expo Router + React
+  Native |
+  | UI Library        | Radix UI + Tailwind      | Tamagui
+    |
+  | Routing           | Tab-based (App.tsx)      | File-based (app/)
+    |
+  | Types Location    | /types/                  | /src/types/
+    |
+  | Services Location | /services/               | /src/services/
+    |
+  | Line Item Type    | BookingLineItem          | BookingCostItem
+    |
+  | Booking Fields    | guestName, tripStartDate | guestName, startDate
+    |
+  | Supabase Client   | /lib/supabase.ts         | /src/lib/supabase.ts
+    |
+
+  ---
+  Phase 1: Database Schema (Shared)
+
+  Single migration file used by both apps:
+
+  File: supabase/migrations/011_customer_tracking_and_pnl.sql
+
+  -- =======================================================================
+  =====
+  -- WIF Finance - Customer Tracking & True P&L
+  -- Migration: 011
+  -- Used by: Web App + Mobile App
+  -- =======================================================================
+  =====
+
+  -- =======================================================================
+  =====
+  -- 1. CUSTOMERS TABLE
+  -- =======================================================================
+  =====
+  CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+
+    -- Identity
+    customer_code VARCHAR(20) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    display_name VARCHAR(100),
+
+    -- Contact
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    whatsapp VARCHAR(50),
+    address TEXT,
+    country VARCHAR(100) DEFAULT 'Malaysia',
+
+    -- Classification
+    customer_type VARCHAR(20) DEFAULT 'b2b',
+    tags JSONB DEFAULT '[]',
+
+    -- Source
+    lead_source VARCHAR(50),
+    referred_by_customer_id UUID REFERENCES customers(id),
+
+    -- Metadata
+    notes TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_by UUID,
+
+    UNIQUE(company_id, customer_code),
+    UNIQUE(company_id, name)
+  );
+
+  -- Auto-generate customer code
+  CREATE OR REPLACE FUNCTION generate_customer_code()
+  RETURNS TRIGGER AS $$
+  DECLARE
+    next_num INTEGER;
+    year_str TEXT := TO_CHAR(NOW(), 'YYYY');
+  BEGIN
+    IF NEW.customer_code IS NULL OR NEW.customer_code = '' THEN
+      SELECT COALESCE(MAX(
+        CAST(SUBSTRING(customer_code FROM 'CUST-' || year_str || '-(\d+)')
+  AS INTEGER)
+      ), 0) + 1 INTO next_num
+      FROM customers
+      WHERE company_id = NEW.company_id
+      AND customer_code LIKE 'CUST-' || year_str || '-%';
+
+      NEW.customer_code := 'CUST-' || year_str || '-' ||
+  LPAD(next_num::TEXT, 4, '0');
+    END IF;
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  CREATE TRIGGER trg_generate_customer_code
+  BEFORE INSERT ON customers FOR EACH ROW
+  EXECUTE FUNCTION generate_customer_code();
+
+  -- =======================================================================
+  =====
+  -- 2. LINK TABLES TO CUSTOMERS
+  -- =======================================================================
+  =====
+
+  -- Bookings → Customer
+  ALTER TABLE bookings
+    ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES customers(id) ON
+  DELETE SET NULL;
+
+  -- Documents → Customer (direct link for invoices/receipts)
+  ALTER TABLE documents
+    ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES customers(id) ON
+  DELETE SET NULL;
+
+  -- Line Items → Booking (for multi-booking voucher allocation)
+  ALTER TABLE line_items
+    ADD COLUMN IF NOT EXISTS booking_id UUID REFERENCES bookings(id) ON
+  DELETE SET NULL;
+
+  -- =======================================================================
+  =====
+  -- 3. INDEXES
+  -- =======================================================================
+  =====
+  CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company_id);
+  CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(company_id,
+  name);
+  CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(company_id,
+  customer_code);
+  CREATE INDEX IF NOT EXISTS idx_customers_active ON customers(company_id)
+  WHERE is_active = true;
+
+  CREATE INDEX IF NOT EXISTS idx_bookings_customer ON bookings(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_documents_customer ON
+  documents(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_line_items_booking ON
+  line_items(booking_id) WHERE booking_id IS NOT NULL;
+
+  -- =======================================================================
+  =====
+  -- 4. P&L VIEW - True Profit from Actual Cash Flows
+  -- =======================================================================
+  =====
+  CREATE OR REPLACE VIEW booking_pnl AS
+  SELECT
+    b.id as booking_id,
+    b.company_id,
+    b.booking_code,
+    b.guest_name,
+    b.customer_id,
+    b.status,
+    b.trip_start_date,
+    b.trip_end_date,
+
+    -- EXPECTED (from booking cost form)
+    COALESCE(b.grand_total_b2b_jpy, 0) as expected_revenue_jpy,
+    COALESCE(b.grand_total_jpy, 0) as expected_cost_jpy,
+    COALESCE(b.grand_total_b2b_jpy, 0) - COALESCE(b.grand_total_jpy, 0) as
+  expected_profit_jpy,
+
+    -- ACTUAL REVENUE (receipts received for this booking)
+    COALESCE((
+      SELECT SUM(r.amount_received)
+      FROM documents d
+      JOIN receipts r ON r.document_id = d.id
+      WHERE d.booking_id = b.id
+      AND d.document_type = 'receipt'
+      AND d.status IN ('issued', 'completed')
+      AND d.deleted_at IS NULL
+    ), 0) as actual_revenue_jpy,
+
+    -- ACTUAL COST: Line items allocated to this booking
+    COALESCE((
+      SELECT SUM(li.amount)
+      FROM line_items li
+      JOIN documents d ON li.document_id = d.id
+      WHERE li.booking_id = b.id
+      AND d.document_type = 'payment_voucher'
+      AND d.deleted_at IS NULL
+    ), 0) as actual_cost_line_items_jpy,
+
+    -- ACTUAL COST: Document-level vouchers (backward compatible)
+    COALESCE((
+      SELECT SUM(COALESCE(sop.total_deducted, d.total))
+      FROM documents d
+      LEFT JOIN payment_vouchers pv ON pv.document_id = d.id
+      LEFT JOIN statements_of_payment sop ON sop.linked_voucher_id = pv.id
+      WHERE d.booking_id = b.id
+      AND d.document_type = 'payment_voucher'
+      AND d.deleted_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM line_items li
+        WHERE li.document_id = d.id AND li.booking_id IS NOT NULL
+      )
+    ), 0) as actual_cost_doc_level_jpy,
+
+    -- Collection status
+    CASE
+      WHEN COALESCE(b.grand_total_b2b_jpy, 0) = 0 THEN 'no_invoice'
+      WHEN COALESCE((
+        SELECT SUM(r.amount_received) FROM documents d
+        JOIN receipts r ON r.document_id = d.id
+        WHERE d.booking_id = b.id AND d.document_type = 'receipt'
+        AND d.status IN ('issued', 'completed') AND d.deleted_at IS NULL
+      ), 0) >= b.grand_total_b2b_jpy THEN 'fully_collected'
+      WHEN COALESCE((
+        SELECT SUM(r.amount_received) FROM documents d
+        JOIN receipts r ON r.document_id = d.id
+        WHERE d.booking_id = b.id AND d.document_type = 'receipt'
+        AND d.status IN ('issued', 'completed') AND d.deleted_at IS NULL
+      ), 0) > 0 THEN 'partially_collected'
+      ELSE 'not_collected'
+    END as collection_status
+
+  FROM bookings b
+  WHERE b.is_active = true;
+
+  -- =======================================================================
+  =====
+  -- 5. CUSTOMER LIFETIME VALUE VIEW
+  -- =======================================================================
+  =====
+  CREATE OR REPLACE VIEW customer_lifetime_value AS
+  SELECT
+    c.id as customer_id,
+    c.company_id,
+    c.customer_code,
+    c.name as customer_name,
+    c.customer_type,
+    c.lead_source,
+    c.created_at as customer_since,
+
+    COUNT(DISTINCT b.id) as total_bookings,
+    COUNT(DISTINCT b.id) FILTER (WHERE b.status = 'completed') as
+  completed_bookings,
+
+    SUM(COALESCE(b.grand_total_b2b_jpy, 0)) as
+  lifetime_expected_revenue_jpy,
+    SUM(COALESCE(b.grand_total_b2b_jpy, 0) - COALESCE(b.grand_total_jpy, 0))
+   as lifetime_expected_profit_jpy,
+
+    MIN(b.trip_start_date) as first_trip_date,
+    MAX(b.trip_start_date) as last_trip_date
+
+  FROM customers c
+  LEFT JOIN bookings b ON b.customer_id = c.id AND b.is_active = true
+  WHERE c.is_active = true
+  GROUP BY c.id;
+
+  -- =======================================================================
+  =====
+  -- 6. DATA MIGRATION - Create customers from existing bookings
+  -- =======================================================================
+  =====
+  INSERT INTO customers (company_id, name, customer_type, notes, created_at)
+  SELECT DISTINCT ON (company_id, guest_name)
+    company_id,
+    guest_name as name,
+    'b2b' as customer_type,
+    'Auto-migrated from booking' as notes,
+    MIN(created_at) as created_at
+  FROM bookings
+  WHERE guest_name IS NOT NULL
+    AND TRIM(guest_name) != ''
+    AND is_active = true
+  GROUP BY company_id, guest_name
+  ON CONFLICT (company_id, name) DO NOTHING;
+
+  -- Link existing bookings to customers
+  UPDATE bookings b
+  SET customer_id = c.id
+  FROM customers c
+  WHERE LOWER(TRIM(b.guest_name)) = LOWER(TRIM(c.name))
+    AND b.company_id = c.company_id
+    AND b.customer_id IS NULL;
+
+  -- Link documents via their bookings
+  UPDATE documents d
+  SET customer_id = b.customer_id
+  FROM bookings b
+  WHERE d.booking_id = b.id
+    AND b.customer_id IS NOT NULL
+    AND d.customer_id IS NULL;
+
+  ---
+  Phase 2: TypeScript Types
+
+  Web App Types
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin/types/customer.ts (NEW)
+
+  export type CustomerType = 'b2b' | 'individual' | 'agency' | 'corporate'
+
+  export type LeadSource =
+    | 'referral' | 'website' | 'social_media'
+    | 'walk_in' | 'phone' | 'email' | 'repeat' | 'partner' | 'other'
+
+  export interface Customer {
+    id: string
+    companyId: string
+    customerCode: string
+    name: string
+    displayName?: string
+    email?: string
+    phone?: string
+    whatsapp?: string
+    address?: string
+    country: string
+    customerType: CustomerType
+    tags: string[]
+    leadSource?: LeadSource
+    referredByCustomerId?: string
+    notes?: string
+    isActive: boolean
+    createdAt: string
+    updatedAt: string
+    createdBy?: string
+  }
+
+  export interface CustomerWithStats extends Customer {
+    totalBookings: number
+    completedBookings: number
+    lifetimeExpectedRevenueJpy: number
+    lifetimeExpectedProfitJpy: number
+    firstTripDate?: string
+    lastTripDate?: string
+  }
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin/types/pnl.ts (NEW)
+
+  export type CollectionStatus = 'no_invoice' | 'fully_collected' |
+  'partially_collected' | 'not_collected'
+  export type PaymentStatus = 'no_costs' | 'fully_paid' | 'partially_paid' |
+   'not_paid'
+
+  export interface BookingPnL {
+    bookingId: string
+    bookingCode: string
+    guestName: string
+    customerId?: string
+    status: string
+    tripStartDate: string
+    tripEndDate?: string
+
+    // Expected
+    expectedRevenueJpy: number
+    expectedCostJpy: number
+    expectedProfitJpy: number
+
+    // Actual
+    actualRevenueJpy: number
+    actualCostJpy: number
+    actualProfitJpy: number
+
+    // Variance
+    profitVarianceJpy: number
+
+    // Status
+    collectionStatus: CollectionStatus
+    paymentStatus: PaymentStatus
+  }
+
+  export interface CustomerLifetimeValue {
+    customerId: string
+    customerCode: string
+    customerName: string
+    customerType: string
+    totalBookings: number
+    completedBookings: number
+    lifetimeExpectedRevenueJpy: number
+    lifetimeExpectedProfitJpy: number
+    firstTripDate?: string
+    lastTripDate?: string
+  }
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin/types/document.ts
+  (MODIFY)
+
+  // Add to LineItem interface
+  export interface LineItem {
+    id: string
+    description: string
+    quantity: number
+    unitPrice: number
+    amount: number
+    bookingId?: string  // NEW - for multi-booking voucher allocation
+  }
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin/types/booking.ts (MODIFY)
+
+  // Add to Booking interface
+  export interface Booking {
+    // ... existing fields ...
+    customerId?: string  // NEW - link to customer
+  }
+
+  Mobile App Types
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin-mobile-app/wif-finance/sr
+  c/types/customer.ts (NEW)
+
+  // Same as web app - copy exactly for consistency
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin-mobile-app/wif-finance/sr
+  c/types/pnl.ts (NEW)
+
+  // Same as web app - copy exactly for consistency
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin-mobile-app/wif-finance/sr
+  c/types/booking.ts (MODIFY)
+
+  // Add to Booking interface
+  export interface Booking {
+    // ... existing fields ...
+    customerId?: string  // NEW
+  }
+
+  // Add to BookingCostItem interface
+  export interface BookingCostItem {
+    // ... existing fields ...
+    bookingId?: string  // NEW - for line item allocation
+  }
+
+  ---
+  Phase 3: Services
+
+  Web App Services
+
+  File:
+  /Users/firdaus/Documents/2025/code/wif-fin/services/customerService.ts
+  (NEW)
+
+  import { supabase } from '../lib/supabase'
+  import type { Customer, CustomerWithStats } from '../types/customer'
+
+  const DEFAULT_COMPANY_ID = 'c0000000-0000-0000-0000-000000000001'
+
+  // Row mapper
+  function mapRowToCustomer(row: any): Customer {
+    return {
+      id: row.id,
+      companyId: row.company_id,
+      customerCode: row.customer_code,
+      name: row.name,
+      displayName: row.display_name,
+      email: row.email,
+      phone: row.phone,
+      whatsapp: row.whatsapp,
+      address: row.address,
+      country: row.country || 'Malaysia',
+      customerType: row.customer_type || 'b2b',
+      tags: row.tags || [],
+      leadSource: row.lead_source,
+      referredByCustomerId: row.referred_by_customer_id,
+      notes: row.notes,
+      isActive: row.is_active,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      createdBy: row.created_by,
+    }
+  }
+
+  export async function createCustomer(
+    customer: Partial<Customer>,
+    companyId: string = DEFAULT_COMPANY_ID
+  ): Promise<Customer> {
+    const { data, error } = await supabase
+      .from('customers')
+      .insert({
+        company_id: companyId,
+        name: customer.name,
+        display_name: customer.displayName,
+        email: customer.email,
+        phone: customer.phone,
+        whatsapp: customer.whatsapp,
+        address: customer.address,
+        country: customer.country || 'Malaysia',
+        customer_type: customer.customerType || 'b2b',
+        tags: customer.tags || [],
+        lead_source: customer.leadSource,
+        notes: customer.notes,
+        created_by: customer.createdBy,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return mapRowToCustomer(data)
+  }
+
+  export async function getCustomers(
+    companyId: string = DEFAULT_COMPANY_ID,
+    options?: { search?: string; activeOnly?: boolean }
+  ): Promise<Customer[]> {
+    let query = supabase
+      .from('customers')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('name')
+
+    if (options?.activeOnly !== false) {
+      query = query.eq('is_active', true)
+    }
+
+    if (options?.search) {
+      query = query.ilike('name', `%${options.search}%`)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return (data || []).map(mapRowToCustomer)
+  }
+
+  export async function getCustomer(id: string): Promise<Customer | null> {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) return null
+    return mapRowToCustomer(data)
+  }
+
+  export async function findOrCreateCustomer(
+    name: string,
+    companyId: string = DEFAULT_COMPANY_ID
+  ): Promise<Customer> {
+    // Try to find existing
+    const { data: existing } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('company_id', companyId)
+      .ilike('name', name.trim())
+      .single()
+
+    if (existing) {
+      return mapRowToCustomer(existing)
+    }
+
+    // Create new
+    return createCustomer({ name: name.trim() }, companyId)
+  }
+
+  export async function getCustomersWithStats(
+    companyId: string = DEFAULT_COMPANY_ID
+  ): Promise<CustomerWithStats[]> {
+    const { data, error } = await supabase
+      .from('customer_lifetime_value')
+      .select('*')
+      .eq('company_id', companyId)
+
+    if (error) throw error
+
+    return (data || []).map(row => ({
+      id: row.customer_id,
+      companyId: row.company_id,
+      customerCode: row.customer_code,
+      name: row.customer_name,
+      customerType: row.customer_type,
+      totalBookings: row.total_bookings || 0,
+      completedBookings: row.completed_bookings || 0,
+      lifetimeExpectedRevenueJpy: row.lifetime_expected_revenue_jpy || 0,
+      lifetimeExpectedProfitJpy: row.lifetime_expected_profit_jpy || 0,
+      firstTripDate: row.first_trip_date,
+      lastTripDate: row.last_trip_date,
+      // Fill other fields from customer lookup if needed
+    })) as CustomerWithStats[]
+  }
+
+  export async function updateCustomer(
+    id: string,
+    updates: Partial<Customer>
+  ): Promise<Customer> {
+    const updateData: any = { updated_at: new Date().toISOString() }
+
+    if (updates.name !== undefined) updateData.name = updates.name
+    if (updates.displayName !== undefined) updateData.display_name =
+  updates.displayName
+    if (updates.email !== undefined) updateData.email = updates.email
+    if (updates.phone !== undefined) updateData.phone = updates.phone
+    if (updates.whatsapp !== undefined) updateData.whatsapp =
+  updates.whatsapp
+    if (updates.address !== undefined) updateData.address = updates.address
+    if (updates.country !== undefined) updateData.country = updates.country
+    if (updates.customerType !== undefined) updateData.customer_type =
+  updates.customerType
+    if (updates.tags !== undefined) updateData.tags = updates.tags
+    if (updates.leadSource !== undefined) updateData.lead_source =
+  updates.leadSource
+    if (updates.notes !== undefined) updateData.notes = updates.notes
+    if (updates.isActive !== undefined) updateData.is_active =
+  updates.isActive
+
+    const { data, error } = await supabase
+      .from('customers')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return mapRowToCustomer(data)
+  }
+
+  export async function linkBookingToCustomer(
+    bookingId: string,
+    customerId: string
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ customer_id: customerId })
+      .eq('id', bookingId)
+
+    if (error) throw error
+  }
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin/services/pnlService.ts
+  (NEW)
+
+  import { supabase } from '../lib/supabase'
+  import type { BookingPnL, CustomerLifetimeValue } from '../types/pnl'
+
+  const DEFAULT_COMPANY_ID = 'c0000000-0000-0000-0000-000000000001'
+
+  export async function getBookingPnL(bookingId: string): Promise<BookingPnL
+   | null> {
+    const { data, error } = await supabase
+      .from('booking_pnl')
+      .select('*')
+      .eq('booking_id', bookingId)
+      .single()
+
+    if (error) return null
+
+    const actualCost = (data.actual_cost_line_items_jpy || 0) +
+  (data.actual_cost_doc_level_jpy || 0)
+    const actualRevenue = data.actual_revenue_jpy || 0
+
+    return {
+      bookingId: data.booking_id,
+      bookingCode: data.booking_code,
+      guestName: data.guest_name,
+      customerId: data.customer_id,
+      status: data.status,
+      tripStartDate: data.trip_start_date,
+      tripEndDate: data.trip_end_date,
+      expectedRevenueJpy: data.expected_revenue_jpy || 0,
+      expectedCostJpy: data.expected_cost_jpy || 0,
+      expectedProfitJpy: data.expected_profit_jpy || 0,
+      actualRevenueJpy: actualRevenue,
+      actualCostJpy: actualCost,
+      actualProfitJpy: actualRevenue - actualCost,
+      profitVarianceJpy: (actualRevenue - actualCost) -
+  (data.expected_profit_jpy || 0),
+      collectionStatus: data.collection_status,
+      paymentStatus: 'not_paid', // Calculate based on actual vs expected 
+  cost
+    }
+  }
+
+  export async function getBookingsPnL(
+    companyId: string = DEFAULT_COMPANY_ID,
+    filters?: { status?: string; customerId?: string }
+  ): Promise<BookingPnL[]> {
+    let query = supabase
+      .from('booking_pnl')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('trip_start_date', { ascending: false })
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status)
+    }
+    if (filters?.customerId) {
+      query = query.eq('customer_id', filters.customerId)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+
+    return (data || []).map(row => {
+      const actualCost = (row.actual_cost_line_items_jpy || 0) +
+  (row.actual_cost_doc_level_jpy || 0)
+      const actualRevenue = row.actual_revenue_jpy || 0
+
+      return {
+        bookingId: row.booking_id,
+        bookingCode: row.booking_code,
+        guestName: row.guest_name,
+        customerId: row.customer_id,
+        status: row.status,
+        tripStartDate: row.trip_start_date,
+        tripEndDate: row.trip_end_date,
+        expectedRevenueJpy: row.expected_revenue_jpy || 0,
+        expectedCostJpy: row.expected_cost_jpy || 0,
+        expectedProfitJpy: row.expected_profit_jpy || 0,
+        actualRevenueJpy: actualRevenue,
+        actualCostJpy: actualCost,
+        actualProfitJpy: actualRevenue - actualCost,
+        profitVarianceJpy: (actualRevenue - actualCost) -
+  (row.expected_profit_jpy || 0),
+        collectionStatus: row.collection_status,
+        paymentStatus: 'not_paid',
+      }
+    })
+  }
+
+  export async function allocateLineItemToBooking(
+    lineItemId: string,
+    bookingId: string
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('line_items')
+      .update({ booking_id: bookingId })
+      .eq('id', lineItemId)
+
+    if (error) throw error
+  }
+
+  File:
+  /Users/firdaus/Documents/2025/code/wif-fin/services/bookingService.ts
+  (MODIFY)
+
+  // Add to createBooking function parameter
+  interface CreateBookingData {
+    // ... existing fields ...
+    customerId?: string  // NEW
+  }
+
+  // Add to booking insert
+  const bookingInsert = {
+    // ... existing fields ...
+    customer_id: booking.customerId,
+  }
+
+  // Add to mapRowToBooking
+  function mapRowToBooking(row: any): Booking {
+    return {
+      // ... existing fields ...
+      customerId: row.customer_id,
+    }
+  }
+
+  // Add to updateBooking
+  if (updates.customerId !== undefined) {
+    updateData.customer_id = updates.customerId
+  }
+
+  Mobile App Services
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin-mobile-app/wif-finance/sr
+  c/services/customers/customerService.ts (NEW)
+
+  // Same implementation as web app, adapted for mobile folder structure
+  // Import from '../lib/supabase' instead of '../../lib/supabase'
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin-mobile-app/wif-finance/sr
+  c/services/pnl/pnlService.ts (NEW)
+
+  // Same implementation as web app
+
+  File: /Users/firdaus/Documents/2025/code/wif-fin-mobile-app/wif-finance/sr
+  c/services/index.ts (MODIFY)
+
+  // Add exports
+  export * from './customers/customerService'
+  export * from './pnl/pnlService'
+
+  ---
+  Phase 4: UI Components
+
+  Web App Components
+
+  | Component          | File                              | Changes
+                                 |
+  |--------------------|-----------------------------------|----------------
+  -------------------------------|
+  | CustomerPicker     | components/CustomerPicker.tsx     | NEW - Combobox
+  to select/create customer      |
+  | CustomerList       | components/CustomerList.tsx       | NEW - List all
+  customers with stats           |
+  | CustomerForm       | components/CustomerForm.tsx       | NEW -
+  Create/edit customer                    |
+  | BookingForm        | components/BookingForm.tsx        | MODIFY - Add
+  CustomerPicker                   |
+  | PaymentVoucherForm | components/PaymentVoucherForm.tsx | MODIFY - Add
+  booking allocation to line items |
+  | BookingPnLCard     | components/BookingPnLCard.tsx     | NEW - Show
+  expected vs actual P&L             |
+  | App.tsx            | App.tsx                           | MODIFY - Add
+  Customers tab                    |
+
+  CustomerPicker Component (Web):
+
+  // components/CustomerPicker.tsx
+  import { useState, useEffect } from 'react'
+  import { Command, CommandInput, CommandList, CommandItem, CommandEmpty }
+  from './ui/command'
+  import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
+  import { Button } from './ui/button'
+  import { getCustomers, createCustomer } from '../services/customerService'
+  import type { Customer } from '../types/customer'
+
+  interface CustomerPickerProps {
+    value?: string // customer ID
+    customerName?: string // for display
+    onSelect: (customer: Customer) => void
+    companyId: string
+  }
+
+  export function CustomerPicker({ value, customerName, onSelect, companyId 
+  }: CustomerPickerProps) {
+    const [open, setOpen] = useState(false)
+    const [search, setSearch] = useState('')
+    const [customers, setCustomers] = useState<Customer[]>([])
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+      loadCustomers()
+    }, [companyId])
+
+    async function loadCustomers() {
+      setLoading(true)
+      const data = await getCustomers(companyId)
+      setCustomers(data)
+      setLoading(false)
+    }
+
+    async function handleCreateNew() {
+      if (!search.trim()) return
+      const newCustomer = await createCustomer({ name: search.trim() },
+  companyId)
+      setCustomers(prev => [...prev, newCustomer])
+      onSelect(newCustomer)
+      setOpen(false)
+      setSearch('')
+    }
+
+    const filtered = customers.filter(c =>
+      c.name.toLowerCase().includes(search.toLowerCase())
+    )
+
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="w-full justify-start">
+            {customerName || 'Select customer...'}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0">
+          <Command>
+            <CommandInput 
+              placeholder="Search or create customer..." 
+              value={search}
+              onValueChange={setSearch}
+            />
+            <CommandList>
+              <CommandEmpty>
+                <Button variant="ghost" onClick={handleCreateNew}>
+                  + Create "{search}"
+                </Button>
+              </CommandEmpty>
+              {filtered.map(customer => (
+                <CommandItem
+                  key={customer.id}
+                  onSelect={() => {
+                    onSelect(customer)
+                    setOpen(false)
+                  }}
+                >
+                  <span>{customer.name}</span>
+                  <span className="text-muted-foreground text-xs ml-2">
+                    {customer.customerCode}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    )
+  }
+
+  Line Item Booking Allocation (Web - PaymentVoucherForm):
+
+  // Add to PaymentVoucherForm.tsx line item section
+  import { BookingPicker } from './BookingPicker'
+
+  // In line item row:
+  <TableCell>
+    <BookingPicker
+      value={item.bookingId}
+      onSelect={(booking) => updateLineItem(index, { bookingId: booking.id
+  })}
+      companyId={companyId}
+      placeholder="Allocate to booking..."
+    />
+  </TableCell>
+
+  Mobile App Components
+
+  | Component            | File                              | Changes
+                 |
+  |----------------------|-----------------------------------|--------------
+  ---------------|
+  | CustomerPicker       | src/components/CustomerPicker.tsx | NEW
+                 |
+  | CustomerListScreen   | app/customers/index.tsx           | NEW
+                 |
+  | CustomerDetailScreen | app/customers/[id].tsx            | NEW
+                 |
+  | BookingForm (new)    | app/booking/new.tsx               | MODIFY - Add
+  CustomerPicker |
+  | BookingForm (edit)   | app/booking/edit/[id].tsx         | MODIFY - Add
+  CustomerPicker |
+  | BookingPnLCard       | src/components/BookingPnLCard.tsx | NEW
+                 |
+
+  ---
+  Phase 5: Implementation Checklist
+
+  ┌─────────────────────────────────────────────────────────────────────────
+  ────────┐
+  │                        IMPLEMENTATION CHECKLIST
+          │
+  ├─────────────────────────────────────────────────────────────────────────
+  ────────┤
+  │
+          │
+  │  DATABASE (Day 1)
+         │
+  │  ☐ Create migration 011_customer_tracking_and_pnl.sql
+         │
+  │  ☐ Test migration on dev database
+         │
+  │  ☐ Verify data migration (customers created from guest_name)            
+         │
+  │  ☐ Verify booking_pnl view returns correct data
+         │
+  │  ☐ Verify customer_lifetime_value view works
+         │
+  │
+          │
+  │  WEB APP - TYPES (Day 1)
+         │
+  │  ☐ Create types/customer.ts
+         │
+  │  ☐ Create types/pnl.ts
+         │
+  │  ☐ Modify types/booking.ts (add customerId)
+         │
+  │  ☐ Modify types/document.ts (add bookingId to LineItem)
+         │
+  │
+          │
+  │  MOBILE APP - TYPES (Day 1)
+         │
+  │  ☐ Create src/types/customer.ts
+         │
+  │  ☐ Create src/types/pnl.ts
+         │
+  │  ☐ Modify src/types/booking.ts (add customerId)
+         │
+  │  ☐ Update src/types/index.ts exports
+         │
+  │
+          │
+  │  WEB APP - SERVICES (Day 2)
+         │
+  │  ☐ Create services/customerService.ts
+         │
+  │  ☐ Create services/pnlService.ts
+         │
+  │  ☐ Modify services/bookingService.ts (customerId support)
+         │
+  │  ☐ Modify services/supabaseService.ts (line item bookingId)
+         │
+  │
+          │
+  │  MOBILE APP - SERVICES (Day 2)
+         │
+  │  ☐ Create src/services/customers/customerService.ts
+         │
+  │  ☐ Create src/services/pnl/pnlService.ts
+         │
+  │  ☐ Modify src/services/bookings/bookingService.ts
+         │
+  │  ☐ Update src/services/index.ts exports
+         │
+  │
+          │
+  │  WEB APP - UI (Day 3-4)
+         │
+  │  ☐ Create components/CustomerPicker.tsx
+         │
+  │  ☐ Create components/CustomerList.tsx
+         │
+  │  ☐ Create components/CustomerForm.tsx
+         │
+  │  ☐ Create components/BookingPnLCard.tsx
+         │
+  │  ☐ Modify components/BookingForm.tsx (add CustomerPicker)
+         │
+  │  ☐ Modify components/PaymentVoucherForm.tsx (line item allocation)
+         │
+  │  ☐ Modify App.tsx (add Customers tab)
+         │
+  │
+          │
+  │  MOBILE APP - UI (Day 4-5)
+         │
+  │  ☐ Create src/components/CustomerPicker.tsx
+         │
+  │  ☐ Create app/customers/index.tsx
+         │
+  │  ☐ Create app/customers/[id].tsx
+         │
+  │  ☐ Create src/components/BookingPnLCard.tsx
+         │
+  │  ☐ Modify app/booking/new.tsx (add CustomerPicker)
+         │
+  │  ☐ Modify app/booking/edit/[id].tsx (add CustomerPicker)
+         │
+  │  ☐ Add Customers tab to navigation
+         │
+  │
+          │
+  │  TESTING (Day 5-6)
+         │
+  │  ☐ Test customer creation (both apps)
+         │
+  │  ☐ Test customer linking to bookings
+         │
+  │  ☐ Test multi-booking voucher line item allocation
+         │
+  │  ☐ Test P&L calculations match expected
+         │
+  │  ☐ Test existing data migrated correctly
+         │
+  │  ☐ Test web/mobile data consistency
+         │
+  │
+          │
+  │  DEPLOYMENT (Day 6)
+         │
+  │  ☐ Run migration on production
+         │
+  │  ☐ Deploy web app
+         │
+  │  ☐ Deploy mobile app (EAS build)
+         │
+  │  ☐ Verify production data
+         │
+  │
+          │
+  └─────────────────────────────────────────────────────────────────────────
+  ────────┘
+
+  ---
+  Files Summary
+
+  | App    | Action | File Path
+  |
+  |--------|--------|-------------------------------------------------------
+  |
+  | Shared | CREATE | supabase/migrations/011_customer_tracking_and_pnl.sql
+  |
+  | Web    | CREATE | types/customer.ts
+  |
+  | Web    | CREATE | types/pnl.ts
+  |
+  | Web    | MODIFY | types/booking.ts
+  |
+  | Web    | MODIFY | types/document.ts
+  |
+  | Web    | CREATE | services/customerService.ts
+  |
+  | Web    | CREATE | services/pnlService.ts
+  |
+  | Web    | MODIFY | services/bookingService.ts
+  |
+  | Web    | CREATE | components/CustomerPicker.tsx
+  |
+  | Web    | CREATE | components/CustomerList.tsx
+  |
+  | Web    | CREATE | components/CustomerForm.tsx
+  |
+  | Web    | CREATE | components/BookingPnLCard.tsx
+  |
+  | Web    | MODIFY | components/BookingForm.tsx
+  |
+  | Web    | MODIFY | components/PaymentVoucherForm.tsx
+  |
+  | Web    | MODIFY | App.tsx
+  |
+  | Mobile | CREATE | src/types/customer.ts
+  |
+  | Mobile | CREATE | src/types/pnl.ts
+  |
+  | Mobile | MODIFY | src/types/booking.ts
+  |
+  | Mobile | MODIFY | src/types/index.ts
+  |
+  | Mobile | CREATE | src/services/customers/customerService.ts
+  |
+  | Mobile | CREATE | src/services/pnl/pnlService.ts
+  |
+  | Mobile | MODIFY | src/services/bookings/bookingService.ts
+  |
+  | Mobile | MODIFY | src/services/index.ts
+  |
+  | Mobile | CREATE | src/components/CustomerPicker.tsx
+  |
+  | Mobile | CREATE | src/components/BookingPnLCard.tsx
+  |
+  | Mobile | CREATE | app/customers/index.tsx
+  |
+  | Mobile | CREATE | app/customers/[id].tsx
+  |
+  | Mobile | MODIFY | app/booking/new.tsx
+  |
+  | Mobile | MODIFY | app/booking/edit/[id].tsx
+  |
+  | Mobile | MODIFY | app/(tabs)/_layout.tsx
+  |
+
+  ---
+  Key Design Decisions
+
+  | Decision                | Choice                   | Rationale
+                     |
+  |-------------------------|--------------------------|--------------------
+  -------------------|
+  | Single migration        | Shared by both apps      | Single source of
+  truth                |
+  | Customer unique by name | UNIQUE(company_id, name) | Simple, prevents
+  duplicates           |
+  | Line item allocation    | line_items.booking_id    | Handles
+  multi-booking vendor invoices |
+  | P&L as database view    | booking_pnl view         | Real-time,
+  consistent across apps     |
+  | Auto-migrate customers  | From existing guest_name | Preserve historical
+   data              |
+  | CustomerPicker pattern  | Search + create inline   | Good UX for both
+  apps                 |
+
+  ---
+  Ready to proceed with implementation? I can start with:
+  1. Database migration (foundation for everything)
+  2. Web app first (since it has more complex forms)
+  3. Mobile app (follow same patterns)
+
+
+

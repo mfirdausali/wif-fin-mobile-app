@@ -40,7 +40,7 @@ import type { Document, DocumentType, DocumentStatus } from '../../src/types'
 import { getAppTheme } from '../../src/constants/theme'
 import { useThemeStore } from '../../src/store/themeStore'
 import { useAuthStore } from '../../src/store/authStore'
-import { canEditDocument, canPrintDocuments } from '../../src/utils/permissions'
+import { canEditDocument, canDeleteDocument, canPrintDocuments } from '../../src/utils/permissions'
 
 type FilterType = 'all' | 'invoice' | 'receipt' | 'payment_voucher' | 'statement_of_payment'
 
@@ -459,7 +459,7 @@ export default function DocumentsScreen() {
           onDelete={handleDeleteDocument}
           canEdit={canEditDocument(user, selectedDocument)}
           canShare={canPrintDocuments(user)}
-          canDelete={canEditDocument(user, selectedDocument)}
+          canDelete={canDeleteDocument(user, selectedDocument)}
         />
       )}
 

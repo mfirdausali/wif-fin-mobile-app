@@ -3,6 +3,8 @@
  *
  * Smart router that detects document type and redirects to the appropriate detail page.
  * This replaces the monolithic document detail screen with a lightweight routing layer.
+ *
+ * IMPORTANT: Shows skeleton loader during routing to prevent blank screen flash.
  */
 
 import { useEffect, useState } from 'react'
@@ -98,13 +100,13 @@ export default function DocumentRouter() {
     router.back()
   }
 
-  // Loading state - show skeleton loader
+  // Loading state - show skeleton for seamless transition
   if (isLoading) {
     return (
-      <>
+      <View style={{ flex: 1, backgroundColor: COLORS.bgPrimary }}>
         <Stack.Screen options={{ headerShown: false }} />
         <InvoiceDetailSkeletonLoader paddingTop={insets.top} />
-      </>
+      </View>
     )
   }
 

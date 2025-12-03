@@ -436,7 +436,13 @@ export default function LoginScreen() {
 
       if (result.success) {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        router.replace('/(tabs)')
+        // Route based on user role - operations users go to dedicated interface
+        const currentUser = useAuthStore.getState().user
+        if (currentUser?.role === 'operations') {
+          router.replace('/(operations)')
+        } else {
+          router.replace('/(tabs)')
+        }
       } else {
         setError(result.error || 'Biometric authentication failed. Please use credentials.')
       }
@@ -486,7 +492,12 @@ export default function LoginScreen() {
 
         await login(storeUser)
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        router.replace('/(tabs)')
+        // Route based on user role - operations users go to dedicated interface
+        if (storeUser.role === 'operations') {
+          router.replace('/(operations)')
+        } else {
+          router.replace('/(tabs)')
+        }
       } else {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
         setError(response.error || 'Invalid username or password')

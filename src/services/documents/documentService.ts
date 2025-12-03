@@ -32,6 +32,8 @@ import {
   fromSupabaseError,
   logError,
 } from '../../utils/errors'
+// NOTE: Account balance updates are handled by the database trigger
+// 'create_transaction_on_document_complete' - do NOT import updateAccountBalance here
 
 /**
  * Helper to create ActivityDocumentInfo from Document
@@ -82,6 +84,25 @@ export function isValidStatusTransition(
 export function getAllowedNextStatuses(currentStatus: DocumentStatus): DocumentStatus[] {
   return VALID_STATUS_TRANSITIONS[currentStatus] || []
 }
+
+// ============================================================================
+// ACCOUNT BALANCE UPDATES
+// ============================================================================
+//
+// IMPORTANT: Account balance updates are handled AUTOMATICALLY by the database
+// trigger 'create_transaction_on_document_complete' defined in Supabase.
+//
+// The trigger fires when:
+// - A document is inserted with status='completed'
+// - A document's status is updated to 'completed'
+//
+// It automatically:
+// - Creates a transaction record in the 'transactions' table
+// - Updates the account's current_balance
+//
+// DO NOT manually call updateAccountBalance or create transactions from the
+// mobile app, as this would result in DUPLICATE entries.
+// ============================================================================
 
 // ============================================================================
 // DOCUMENT NUMBER GENERATION
@@ -355,6 +376,11 @@ export async function createDocument(
       })
     }
 
+    // NOTE: Account balance updates are handled by the database trigger
+    // 'create_transaction_on_document_complete' which fires when a document
+    // is inserted/updated with status='completed'. Do NOT call applyAccountBalanceChange
+    // here as it would create duplicate transactions.
+
     return createdDoc
   } catch (error) {
     // If we have a documentId but got an unexpected error, try to rollback
@@ -530,6 +556,7 @@ export async function updateDocumentStatus(
     }
 
     const previousStatus = docInfo.status as DocumentStatus
+    const documentType = docInfo.document_type as DocumentType
 
     // Validate status transition unless skipped
     if (!skipValidation && !isValidStatusTransition(previousStatus, status)) {
@@ -562,6 +589,11 @@ export async function updateDocumentStatus(
       })
     }
 
+    // NOTE: Account balance updates are handled by the database trigger
+    // 'create_transaction_on_document_complete' which fires when a document's
+    // status is updated to 'completed'. Do NOT call applyAccountBalanceChange
+    // here as it would create duplicate transactions.
+
     return { success: true }
   } catch (error) {
     console.error('Error updating document status:', error)
@@ -574,12 +606,93 @@ export async function updateDocumentStatus(
 // ============================================================================
 
 /**
+ * Check if a document can be deleted
+ * Validates business rules:
+ * - Payment Vouchers cannot be deleted if referenced by any Statement of Payment
+ * @param documentId - Document ID to check
+ * @returns Object with canDelete flag and optional reason message
+ */
+export async function checkCanDeleteDocument(
+  documentId: string
+): Promise<{ canDelete: boolean; reason?: string }> {
+  try {
+    // Get the document to check its type
+    const { data: docData, error: docError } = await supabase
+      .from('documents')
+      .select('document_type')
+      .eq('id', documentId)
+      .is('deleted_at', null)
+      .single()
+
+    if (docError) throw fromSupabaseError(docError)
+    if (!docData) {
+      return { canDelete: false, reason: 'Document not found' }
+    }
+
+    // If it's a payment voucher, check for linked statements
+    if (docData.document_type === 'payment_voucher') {
+      // First, get the payment_vouchers.id from the document_id
+      const { data: voucherData, error: voucherError } = await supabase
+        .from('payment_vouchers')
+        .select('id')
+        .eq('document_id', documentId)
+        .maybeSingle()
+
+      if (voucherError) throw fromSupabaseError(voucherError)
+
+      if (voucherData) {
+        // Check if any ACTIVE (non-deleted) statements reference this voucher
+        const { data: statements, error: statementsError } = await supabase
+          .from('statements_of_payment')
+          .select('id, documents!inner(document_number, deleted_at)')
+          .eq('linked_voucher_id', voucherData.id)
+
+        if (statementsError) throw fromSupabaseError(statementsError)
+
+        // Filter for non-deleted statements only
+        const activeStatements = statements?.filter((sop: any) => {
+          const doc = Array.isArray(sop.documents) ? sop.documents[0] : sop.documents
+          return doc && !doc.deleted_at
+        })
+
+        if (activeStatements && activeStatements.length > 0) {
+          const statementDoc = activeStatements[0].documents as any
+          const statementNumber = Array.isArray(statementDoc)
+            ? statementDoc[0]?.document_number
+            : statementDoc?.document_number
+
+          return {
+            canDelete: false,
+            reason: `This Payment Voucher is referenced by Statement of Payment ${statementNumber || ''}. Please delete the statement first.`,
+          }
+        }
+      }
+    }
+
+    return { canDelete: true }
+  } catch (error) {
+    console.error('Error checking if document can be deleted:', error)
+    return {
+      canDelete: false,
+      reason: `Failed to validate deletion: ${error}`,
+    }
+  }
+}
+
+/**
  * Soft delete a document
  * @param documentId - Document ID to delete
  * @param user - Optional user for activity logging
  */
 export async function deleteDocument(documentId: string, user?: ActivityUser): Promise<boolean> {
   try {
+    // Check if document can be deleted (validates business rules)
+    const validation = await checkCanDeleteDocument(documentId)
+    if (!validation.canDelete) {
+      console.warn('Cannot delete document:', validation.reason)
+      throw new Error(validation.reason || 'Cannot delete document')
+    }
+
     // Get document info for logging before deletion
     const { data: docInfo } = await supabase
       .from('documents')
@@ -831,6 +944,18 @@ async function getInvoiceData(doc: any, items: any[]): Promise<Invoice> {
     due_date: doc.document_date,
   }
 
+  // Fetch account name if accountId exists
+  let accountName: string | undefined
+  if (doc.account_id) {
+    const { data: accountData } = await supabase
+      .from('accounts')
+      .select('name')
+      .eq('id', doc.account_id)
+      .maybeSingle()
+
+    accountName = accountData?.name
+  }
+
   return {
     id: doc.id,
     documentType: 'invoice',
@@ -845,6 +970,7 @@ async function getInvoiceData(doc: any, items: any[]): Promise<Invoice> {
     taxAmount: doc.tax_amount || undefined,
     total: doc.total || doc.amount,
     accountId: doc.account_id || undefined,
+    accountName: accountName,
     notes: doc.notes || undefined,
     items: items.map(dbLineItemToLineItem),
     customerName: invoiceData.customer_name,
@@ -872,6 +998,65 @@ async function getReceiptData(doc: any, items: any[]): Promise<Receipt> {
     received_by: 'Unknown',
   }
 
+  // Fetch linked invoice's document number and document_id if linkedInvoiceId exists
+  // Using two separate queries for reliability (JOIN syntax can fail without proper FK relationships)
+  let linkedInvoiceNumber: string | undefined
+  let linkedInvoiceDocumentId: string | undefined
+  if (receiptData.linked_invoice_id) {
+    try {
+      // The linked_invoice_id in receipts table references invoices.id (NOT documents.id)
+      // Step 1: Get document_id from invoices table
+      const { data: invoiceData, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('document_id')
+        .eq('id', receiptData.linked_invoice_id)
+        .maybeSingle()
+
+      if (invoiceError) {
+        console.error('[getReceiptData] Failed to fetch invoice document_id:', invoiceError)
+      } else if (invoiceData?.document_id) {
+        // Store the document_id for navigation
+        linkedInvoiceDocumentId = invoiceData.document_id
+
+        // Step 2: Get document_number from documents table using the document_id
+        const { data: documentData, error: documentError } = await supabase
+          .from('documents')
+          .select('document_number')
+          .eq('id', invoiceData.document_id)
+          .maybeSingle()
+
+        if (documentError) {
+          console.error('[getReceiptData] Failed to fetch document_number:', documentError)
+        } else if (documentData?.document_number) {
+          linkedInvoiceNumber = documentData.document_number
+          console.log('[getReceiptData] Successfully fetched linked invoice:', {
+            linked_invoice_id: receiptData.linked_invoice_id,
+            document_id: linkedInvoiceDocumentId,
+            linkedInvoiceNumber,
+          })
+        } else {
+          console.warn('[getReceiptData] Document number not found for document_id:', invoiceData.document_id)
+        }
+      } else {
+        console.warn('[getReceiptData] Invoice not found for linked_invoice_id:', receiptData.linked_invoice_id)
+      }
+    } catch (error) {
+      console.error('[getReceiptData] Error fetching linked invoice data:', error)
+    }
+  }
+
+  // Fetch account name if accountId exists
+  let accountName: string | undefined
+  if (doc.account_id) {
+    const { data: accountData } = await supabase
+      .from('accounts')
+      .select('name')
+      .eq('id', doc.account_id)
+      .maybeSingle()
+
+    accountName = accountData?.name
+  }
+
   return {
     id: doc.id,
     documentType: 'receipt',
@@ -886,12 +1071,14 @@ async function getReceiptData(doc: any, items: any[]): Promise<Receipt> {
     taxAmount: doc.tax_amount || undefined,
     total: doc.total || doc.amount,
     accountId: doc.account_id || undefined,
+    accountName: accountName,
     notes: doc.notes || undefined,
     payerName: receiptData.payer_name,
     payerContact: receiptData.payer_contact || undefined,
     receiptDate: receiptData.receipt_date,
     paymentMethod: receiptData.payment_method,
-    linkedInvoiceId: receiptData.linked_invoice_id || undefined,
+    linkedInvoiceId: linkedInvoiceDocumentId || receiptData.linked_invoice_id || undefined,
+    linkedInvoiceNumber: linkedInvoiceNumber,
     receivedBy: receiptData.received_by,
     createdAt: doc.created_at,
     updatedAt: doc.updated_at,
@@ -911,6 +1098,18 @@ async function getPaymentVoucherData(doc: any, items: any[]): Promise<PaymentVou
     requested_by: 'Unknown',
   }
 
+  // Fetch account name if accountId exists
+  let accountName: string | undefined
+  if (doc.account_id) {
+    const { data: accountData } = await supabase
+      .from('accounts')
+      .select('name')
+      .eq('id', doc.account_id)
+      .maybeSingle()
+
+    accountName = accountData?.name
+  }
+
   return {
     id: doc.id,
     documentType: 'payment_voucher',
@@ -925,6 +1124,7 @@ async function getPaymentVoucherData(doc: any, items: any[]): Promise<PaymentVou
     taxAmount: doc.tax_amount || undefined,
     total: doc.total || doc.amount,
     accountId: doc.account_id || undefined,
+    accountName: accountName,
     notes: doc.notes || undefined,
     items: items.map(dbLineItemToLineItem),
     payeeName: voucherData.payee_name,
@@ -958,6 +1158,41 @@ async function getStatementOfPaymentData(doc: any, items: any[]): Promise<Statem
     total_deducted: doc.amount,
   }
 
+  // Fetch account name if accountId exists
+  let accountName: string | undefined
+  if (doc.account_id) {
+    const { data: accountData } = await supabase
+      .from('accounts')
+      .select('name')
+      .eq('id', doc.account_id)
+      .maybeSingle()
+
+    accountName = accountData?.name
+  }
+
+  // Fetch linked voucher's document number if linkedVoucherId exists
+  // Using JOIN query for reliability and efficiency
+  let linkedVoucherNumber: string | undefined
+  if (statementData.linked_voucher_id) {
+    // The linked_voucher_id in statements_of_payment table references payment_vouchers.id (NOT documents.id)
+    // We need to: payment_vouchers.id -> payment_vouchers.document_id -> documents.document_number
+    const { data: voucherWithDoc, error: lookupError } = await supabase
+      .from('payment_vouchers')
+      .select('document_id, documents(document_number)')
+      .eq('id', statementData.linked_voucher_id)
+      .maybeSingle()
+
+    if (lookupError) {
+      console.warn('[getStatementOfPaymentData] Failed to lookup linked voucher:', lookupError)
+    } else if (voucherWithDoc) {
+      // Handle both nested object and array response formats from Supabase
+      const docs = voucherWithDoc.documents
+      if (docs) {
+        linkedVoucherNumber = Array.isArray(docs) ? docs[0]?.document_number : (docs as any).document_number
+      }
+    }
+  }
+
   return {
     id: doc.id,
     documentType: 'statement_of_payment',
@@ -972,10 +1207,11 @@ async function getStatementOfPaymentData(doc: any, items: any[]): Promise<Statem
     taxAmount: doc.tax_amount || undefined,
     total: doc.total || doc.amount,
     accountId: doc.account_id || undefined,
+    accountName: accountName,
     notes: doc.notes || undefined,
     items: items.map(dbLineItemToLineItem),
     linkedVoucherId: statementData.linked_voucher_id,
-    linkedVoucherNumber: '',
+    linkedVoucherNumber: linkedVoucherNumber,
     paymentDate: statementData.payment_date,
     paymentMethod: statementData.payment_method,
     transactionReference: statementData.transaction_reference,
@@ -1044,5 +1280,198 @@ export async function isDocumentStale(
   } catch (error) {
     console.error('Error checking if document is stale:', error)
     return false
+  }
+}
+
+// ============================================================================
+// INVOICE PAYMENT TRACKING
+// ============================================================================
+
+/**
+ * Invoice payment status information
+ */
+export interface InvoicePaymentStatus {
+  invoiceTotal: number
+  amountPaid: number
+  balanceDue: number
+  paymentCount: number
+  lastPaymentDate?: string
+  paymentStatus: 'unpaid' | 'partially_paid' | 'fully_paid'
+  percentPaid: number
+}
+
+/**
+ * Receipt linked to an invoice
+ */
+export interface LinkedReceipt {
+  receiptId: string
+  documentId: string
+  documentNumber: string
+  amount: number
+  receiptDate: string
+  paymentMethod: string
+  payerName: string
+  status: string
+}
+
+/**
+ * Get payment status for an invoice
+ * Calculates total paid, balance due, and payment progress from linked receipts
+ * @param invoiceDocumentId - The document ID of the invoice (not invoice.id)
+ */
+export async function getInvoicePaymentStatus(
+  invoiceDocumentId: string
+): Promise<InvoicePaymentStatus | null> {
+  try {
+    // First, get the invoice total from documents table
+    const { data: invoiceDoc, error: invoiceError } = await supabase
+      .from('documents')
+      .select('amount, currency')
+      .eq('id', invoiceDocumentId)
+      .eq('document_type', 'invoice')
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (invoiceError) throw invoiceError
+    if (!invoiceDoc) return null
+
+    const invoiceTotal = invoiceDoc.amount || 0
+
+    // Get the invoice record to find linked receipts
+    const { data: invoice, error: invError } = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('document_id', invoiceDocumentId)
+      .maybeSingle()
+
+    if (invError) throw invError
+    if (!invoice) return null
+
+    // Query linked receipts (non-deleted, completed)
+    const { data: receipts, error: receiptsError } = await supabase
+      .from('receipts')
+      .select(`
+        id,
+        documents!inner (
+          id,
+          amount,
+          document_date,
+          status,
+          deleted_at
+        )
+      `)
+      .eq('linked_invoice_id', invoice.id)
+
+    if (receiptsError) throw receiptsError
+
+    // Filter and sum payments from active receipts
+    let amountPaid = 0
+    let paymentCount = 0
+    let lastPaymentDate: string | undefined
+
+    if (receipts) {
+      for (const receipt of receipts) {
+        const doc = receipt.documents as any
+        // Only count non-deleted, completed receipts
+        if (doc && !doc.deleted_at && (doc.status === 'completed' || doc.status === 'paid')) {
+          amountPaid += doc.amount || 0
+          paymentCount++
+          if (!lastPaymentDate || doc.document_date > lastPaymentDate) {
+            lastPaymentDate = doc.document_date
+          }
+        }
+      }
+    }
+
+    const balanceDue = invoiceTotal - amountPaid
+    const percentPaid = invoiceTotal > 0 ? Math.round((amountPaid / invoiceTotal) * 1000) / 10 : 100
+
+    // Determine payment status
+    let paymentStatus: 'unpaid' | 'partially_paid' | 'fully_paid'
+    if (amountPaid === 0) {
+      paymentStatus = 'unpaid'
+    } else if (amountPaid >= invoiceTotal) {
+      paymentStatus = 'fully_paid'
+    } else {
+      paymentStatus = 'partially_paid'
+    }
+
+    return {
+      invoiceTotal,
+      amountPaid,
+      balanceDue,
+      paymentCount,
+      lastPaymentDate,
+      paymentStatus,
+      percentPaid,
+    }
+  } catch (error) {
+    console.error('Error getting invoice payment status:', error)
+    return null
+  }
+}
+
+/**
+ * Get all receipts linked to an invoice
+ * @param invoiceDocumentId - The document ID of the invoice
+ */
+export async function getInvoiceReceipts(
+  invoiceDocumentId: string
+): Promise<LinkedReceipt[]> {
+  try {
+    // Get the invoice record
+    const { data: invoice, error: invError } = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('document_id', invoiceDocumentId)
+      .maybeSingle()
+
+    if (invError) throw invError
+    if (!invoice) return []
+
+    // Query linked receipts
+    const { data: receipts, error: receiptsError } = await supabase
+      .from('receipts')
+      .select(`
+        id,
+        payer_name,
+        receipt_date,
+        payment_method,
+        documents!inner (
+          id,
+          document_number,
+          amount,
+          status,
+          deleted_at
+        )
+      `)
+      .eq('linked_invoice_id', invoice.id)
+      .order('receipt_date', { ascending: false })
+
+    if (receiptsError) throw receiptsError
+    if (!receipts) return []
+
+    // Map to LinkedReceipt format, filtering out deleted
+    return receipts
+      .filter((r) => {
+        const doc = r.documents as any
+        return doc && !doc.deleted_at
+      })
+      .map((r) => {
+        const doc = r.documents as any
+        return {
+          receiptId: r.id,
+          documentId: doc.id,
+          documentNumber: doc.document_number,
+          amount: doc.amount,
+          receiptDate: r.receipt_date,
+          paymentMethod: r.payment_method,
+          payerName: r.payer_name,
+          status: doc.status,
+        }
+      })
+  } catch (error) {
+    console.error('Error getting invoice receipts:', error)
+    return []
   }
 }

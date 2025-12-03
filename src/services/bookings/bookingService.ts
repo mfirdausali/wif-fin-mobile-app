@@ -203,7 +203,7 @@ export async function createBooking(
       number_of_pax: booking.pax?.toString() || '',
       country: 'Japan',
       status: booking.status,
-      exchange_rate: booking.exchangeRate || 0.0385, // JPY to MYR (¥100 = RM3.85)
+      exchange_rate: booking.exchangeRate || 0.031, // JPY to MYR (¥100 = RM3.85)
 
       // Cost items stored as JSONB (correct column names!)
       transportation_items: booking.transportation || [],
@@ -472,7 +472,7 @@ export async function deleteBooking(bookingId: string, user?: ActivityUser): Pro
 
     const { error } = await supabase
       .from('bookings')
-      .update({ is_active: false })
+      .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', bookingId)
 
     if (error) throw error
@@ -685,7 +685,7 @@ function calculateTotals(booking: Partial<Booking>) {
   let totalB2BCostMYR: number | undefined
   let totalProfitMYR: number | undefined
 
-  const exchangeRate = booking.exchangeRate || 0.026
+  const exchangeRate = booking.exchangeRate || 0.0385 // JPY to MYR (¥100 = RM3.85)
   if (exchangeRate > 0) {
     totalInternalCostMYR = totalInternalCostJPY * exchangeRate
     totalB2BCostMYR = totalB2BCostJPY * exchangeRate

@@ -2,16 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { ActivityIndicator, Alert, StyleSheet, View, Pressable, Text as RNText } from 'react-native'
 import { YStack, XStack, Text, ScrollView } from 'tamagui'
-import { ChevronLeft, User, Calendar, DollarSign, Edit3, Share2, Send, CheckCircle, Link, Image, Receipt, FileText } from '@tamagui/lucide-icons'
+import { ChevronLeft, User, Calendar, DollarSign, Edit3, Share2, Send, CheckCircle, Link, Image, Receipt, FileText, Trash2 } from '@tamagui/lucide-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg'
 import * as Haptics from 'expo-haptics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFonts, CormorantGaramond_400Regular, CormorantGaramond_500Medium, CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond'
-import { getDocument, sharePDF } from '../../../src/services'
+import { getDocument, sharePDF, deleteDocument } from '../../../src/services'
 import type { StatementOfPayment, LineItem } from '../../../src/types'
 import { useAuthStore } from '../../../src/store/authStore'
-import { canEditDocument, canPrintDocuments, getEditRestrictionMessage } from '../../../src/utils/permissions'
+import { canEditDocument, canPrintDocuments, canDeleteDocument, getEditRestrictionMessage } from '../../../src/utils/permissions'
 import { InvoiceDetailSkeletonLoader } from '../../../src/components/ui/SkeletonLoader'
 
 const COLORS = {
@@ -42,9 +42,18 @@ const COLORS = {
 const GoldGlowBackground = () => (
   <Svg height="300" width="100%" style={StyleSheet.absoluteFill}>
     <Defs>
-      <RadialGradient id="goldGlow" cx="50%" cy="0%">
+      <RadialGradient
+        id="goldGlow"
+        cx="85%"
+        cy="35%"
+        rx="70%"
+        ry="60%"
+        fx="85%"
+        fy="35%"
+      >
         <Stop offset="0%" stopColor={COLORS.kinGold} stopOpacity="0.15" />
-        <Stop offset="50%" stopColor={COLORS.kinGold} stopOpacity="0.05" />
+        <Stop offset="50%" stopColor={COLORS.kinGold} stopOpacity="0.06" />
+        <Stop offset="70%" stopColor={COLORS.kinGold} stopOpacity="0" />
         <Stop offset="100%" stopColor={COLORS.kinGold} stopOpacity="0" />
       </RadialGradient>
     </Defs>
@@ -163,7 +172,18 @@ export default function StatementOfPaymentDetailScreen() {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
       setSharing(true)
-      await sharePDF(statement)
+
+      // Pass printer info for "Printed by" and timestamp on PDF
+      const printerInfo = {
+        userName: currentUser.name || currentUser.username || 'Unknown',
+        printDate: new Date().toISOString(),
+      }
+
+      await sharePDF(statement, undefined, printerInfo, {
+        id: currentUser.id,
+        name: currentUser.name || '',
+        username: currentUser.username || '',
+      })
     } catch (error) {
       console.error('Error sharing statement of payment:', error)
       Alert.alert('Error', 'Failed to share statement of payment')
@@ -172,8 +192,43 @@ export default function StatementOfPaymentDetailScreen() {
     }
   }, [statement, currentUser])
 
-  if (!fontsLoaded || loading) {
-    return <InvoiceDetailSkeletonLoader />
+  const handleDelete = useCallback(() => {
+    if (!statement || !currentUser) return
+
+    Alert.alert(
+      'Delete Document',
+      `Delete ${statement.documentNumber}? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await deleteDocument(statement.id)
+              if (success) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                router.back()
+              } else {
+                Alert.alert('Error', 'Failed to delete document')
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete document')
+            }
+          },
+        },
+      ]
+    )
+  }, [statement, currentUser, router])
+
+  // Show skeleton while loading data (don't block on fonts - skeleton doesn't need them)
+  if (loading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <InvoiceDetailSkeletonLoader paddingTop={insets.top} />
+      </>
+    )
   }
 
   if (!statement) {
@@ -195,88 +250,62 @@ export default function StatementOfPaymentDetailScreen() {
         }}
       />
 
-      {/* Dark Header with Gold Glow */}
-      <View style={{ backgroundColor: COLORS.sumiInk }}>
-        <GoldGlowBackground />
-        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 60 }}>
-          <XStack alignItems="center" justifyContent="space-between" marginBottom={16}>
-            <Pressable onPress={handleBack} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <ChevronLeft size={20} color="rgba(255,255,255,0.8)" />
-              <RNText style={{ fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.8)' }}>Back</RNText>
-            </Pressable>
-            <Text
-              fontFamily="CormorantGaramond_500Medium"
-              fontSize={18}
-              color={COLORS.textInverse}
-            >
-              Statement of Payment
-            </Text>
-            <View style={{ width: 60 }} />
-          </XStack>
-        </View>
-
-        {/* Floating Amount Card - Shows Total Deducted (key number) - OVERLAPS HEADER */}
-        <View
-          style={{
-            backgroundColor: COLORS.bgCard,
-            borderRadius: 16,
-            padding: 20,
-            marginHorizontal: 20,
-            marginTop: -40,
-            marginBottom: 16,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 12 },
-            shadowOpacity: 0.12,
-            shadowRadius: 32,
-            elevation: 12,
-          }}
+      {/* Header Container - wraps both header and floating card */}
+      <View style={styles.headerContainer}>
+        {/* Dark Header with Gold Glow */}
+        <LinearGradient
+          colors={[COLORS.sumiInk, COLORS.sumiInkLight]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.header, { paddingTop: insets.top }]}
         >
-            <XStack justifyContent="space-between" alignItems="flex-start" marginBottom={12}>
-              <YStack flex={1}>
-                <Text
-                  fontFamily="CormorantGaramond_600SemiBold"
-                  fontSize={36}
-                  color={COLORS.kinGold}
-                  lineHeight={42}
-                >
-                  {formatCurrency(statement.totalDeducted, statement.currency)}
-                </Text>
-                <Text fontSize={13} color={COLORS.textMuted} marginTop={2}>
-                  Total Deducted
-                </Text>
-              </YStack>
-              <View
-                style={{
-                  backgroundColor: statusColors.bg,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: statusColors.border + '20',
-                }}
+          <View style={styles.goldGlowContainer}>
+            <GoldGlowBackground />
+          </View>
+          <View style={styles.headerNav}>
+            <Pressable
+              onPress={handleBack}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <ChevronLeft size={20} color="rgba(255,255,255,0.8)" />
+              <RNText style={styles.backText}>Back</RNText>
+            </Pressable>
+            <RNText style={styles.headerTitle}>Statement of Payment</RNText>
+            <View style={{ width: 80 }} />
+          </View>
+        </LinearGradient>
+
+        {/* Floating Amount Card - positioned to overlap header */}
+        <View style={styles.amountCard}>
+          <View style={styles.amountCardHeader}>
+            <RNText style={styles.amountLabel}>TOTAL DEDUCTED</RNText>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: statusColors.bg },
+              ]}
+            >
+              <View style={[styles.statusDot, { backgroundColor: statusColors.text }]} />
+              <RNText
+                style={[
+                  styles.statusText,
+                  { color: statusColors.text },
+                ]}
               >
-                <Text fontSize={12} fontWeight="600" color={statusColors.text}>
-                  {statement.status.toUpperCase()}
-                </Text>
-              </View>
-            </XStack>
+                {statement.status.toUpperCase()}
+              </RNText>
+            </View>
+          </View>
 
-            <View style={{ height: 1, backgroundColor: COLORS.borderSubtle, marginVertical: 12 }} />
+          <RNText style={styles.amountValue}>{formatCurrency(statement.totalDeducted, statement.currency)}</RNText>
 
-            <YStack gap={6}>
-              <XStack justifyContent="space-between">
-                <Text fontSize={13} color={COLORS.textMuted}>Document Number</Text>
-                <Text fontSize={13} fontWeight="600" color={COLORS.textPrimary}>
-                  {statement.documentNumber}
-                </Text>
-              </XStack>
-              <XStack justifyContent="space-between">
-                <Text fontSize={13} color={COLORS.textMuted}>Payment Date</Text>
-                <Text fontSize={13} fontWeight="600" color={COLORS.midoriJade}>
-                  {formatDate(statement.paymentDate)}
-                </Text>
-              </XStack>
-            </YStack>
+          <View style={styles.amountCardFooter}>
+            <RNText style={styles.documentNumber}>{statement.documentNumber}</RNText>
+            <RNText style={styles.paymentDate}>
+              {formatDate(statement.paymentDate)}
+            </RNText>
+          </View>
         </View>
       </View>
 
@@ -390,15 +419,17 @@ export default function StatementOfPaymentDetailScreen() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: COLORS.aiIndigoSoft,
+                  backgroundColor: COLORS.kinGoldSoft,
                   alignItems: 'center',
                   justifyContent: 'center',
+                  borderWidth: 2,
+                  borderColor: COLORS.kinGold,
                 }}
               >
                 <Text
                   fontFamily="CormorantGaramond_600SemiBold"
                   fontSize={16}
-                  color={COLORS.aiIndigo}
+                  color={COLORS.kinGold}
                 >
                   {getInitials(statement.payeeName)}
                 </Text>
@@ -818,93 +849,216 @@ export default function StatementOfPaymentDetailScreen() {
       </ScrollView>
 
       {/* Action Bar */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: COLORS.bgCard,
-          borderTopWidth: 1,
-          borderTopColor: COLORS.borderSubtle,
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: insets.bottom + 16,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.05,
-          shadowRadius: 8,
-          elevation: 10,
-        }}
-      >
-        <XStack gap={12}>
-          {currentUser && statement && canEditDocument(currentUser, statement) && (
-            <Pressable
-              onPress={handleEdit}
-              style={{
-                flex: 1,
-                backgroundColor: COLORS.bgPrimary,
-                borderRadius: 12,
-                paddingVertical: 14,
-                paddingHorizontal: 20,
-                borderWidth: 1.5,
-                borderColor: COLORS.borderMedium,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <Edit3 size={18} color={COLORS.textSecondary} />
-              <RNText
-                style={{
-                  fontSize: 15,
-                  fontWeight: '600',
-                  color: COLORS.textSecondary,
-                }}
-              >
-                Edit
-              </RNText>
-            </Pressable>
-          )}
+      <View style={[styles.actionBar, { paddingBottom: insets.bottom + 16 }]}>
+        {currentUser && statement && canDeleteDocument(currentUser, statement) && (
+          <Pressable
+            style={styles.deleteButton}
+            onPress={handleDelete}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Trash2 size={18} color={COLORS.shuVermillion} />
+          </Pressable>
+        )}
 
-          {currentUser && canPrintDocuments(currentUser) && (
-            <Pressable
-              onPress={handleShare}
-              disabled={sharing}
-              style={{
-                flex: 1,
-                backgroundColor: COLORS.kinGold,
-                borderRadius: 12,
-                paddingVertical: 14,
-                paddingHorizontal: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                opacity: sharing ? 0.6 : 1,
-              }}
-            >
-              {sharing ? (
-                <ActivityIndicator size="small" color={COLORS.textInverse} />
-              ) : (
-                <>
-                  <Share2 size={18} color={COLORS.textInverse} />
-                  <RNText
-                    style={{
-                      fontSize: 15,
-                      fontWeight: '600',
-                      color: COLORS.textInverse,
-                    }}
-                  >
-                    Share PDF
-                  </RNText>
-                </>
-              )}
-            </Pressable>
-          )}
-        </XStack>
+        {currentUser && statement && canEditDocument(currentUser, statement) && (
+          <Pressable
+            style={styles.editButton}
+            onPress={handleEdit}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Edit3 size={18} color={COLORS.textSecondary} />
+            <RNText style={styles.editButtonText}>Edit</RNText>
+          </Pressable>
+        )}
+
+        {currentUser && canPrintDocuments(currentUser) && (
+          <Pressable
+            style={[styles.shareButton, !(currentUser && statement && canEditDocument(currentUser, statement)) && !(currentUser && statement && canDeleteDocument(currentUser, statement)) && styles.shareButtonFull]}
+            onPress={handleShare}
+            disabled={sharing}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            {sharing ? (
+              <ActivityIndicator size="small" color={COLORS.textInverse} />
+            ) : (
+              <>
+                <Share2 size={18} color={COLORS.textInverse} />
+                <RNText style={styles.shareButtonText}>Share PDF</RNText>
+              </>
+            )}
+          </Pressable>
+        )}
       </View>
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  // Header Container
+  headerContainer: {
+    zIndex: 10,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 80, // Extended padding for card overlap
+    position: 'relative',
+  },
+  goldGlowContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  headerNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    width: 80,
+  },
+  backText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.8)',
+  },
+  headerTitle: {
+    fontFamily: 'CormorantGaramond_500Medium',
+    fontSize: 18,
+    fontWeight: '500',
+    color: COLORS.textInverse,
+    textAlign: 'center',
+    letterSpacing: 0.4,
+  },
+
+  // Floating Amount Card
+  amountCard: {
+    backgroundColor: COLORS.bgCard,
+    marginHorizontal: 16,
+    marginTop: -60, // Pull up significantly into header area
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: COLORS.sumiInk,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 32,
+    elevation: 12,
+  },
+  amountCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  amountLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textMuted,
+    letterSpacing: 0.5,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  amountValue: {
+    fontFamily: 'CormorantGaramond_600SemiBold',
+    fontSize: 32,
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  amountCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  documentNumber: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  paymentDate: {
+    fontSize: 12,
+    color: COLORS.midoriJade,
+  },
+
+  // Action Bar
+  actionBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    backgroundColor: COLORS.bgCard,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderSubtle,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  deleteButton: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.shuVermillionSoft,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.shuVermillion + '30',
+  },
+  editButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 15,
+    backgroundColor: COLORS.bgPrimary,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderMedium,
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  shareButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 15,
+    backgroundColor: COLORS.sumiInk,
+    borderRadius: 10,
+  },
+  shareButtonFull: {
+    flex: 1,
+  },
+  shareButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textInverse,
+  },
+})

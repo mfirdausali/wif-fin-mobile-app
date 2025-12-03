@@ -51,6 +51,7 @@ import {
 import { getBooking, deleteBooking } from '../../src/services/bookings/bookingService'
 import { useAuthStore } from '../../src/store/authStore'
 import { BookingPrintDialog, PrintOptions } from '../../src/components/booking/BookingPrintDialog'
+import { BookingFormPrintDialog, BookingFormPrintOptions } from '../../src/components/booking/BookingFormPrintDialog'
 import { PdfService, MultiplePDFResult, PDFResult } from '../../src/services/print/pdfService'
 import { logBookingEvent } from '../../src/services/activity/activityLogService'
 import type { Booking, BookingCostItem } from '../../src/types'
@@ -121,6 +122,7 @@ export default function BookingDetailScreen() {
   const [error, setError] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showPrintDialog, setShowPrintDialog] = useState(false)
+  const [showFormPrintDialog, setShowFormPrintDialog] = useState(false)
   const [fabExpanded, setFabExpanded] = useState(false)
 
   const fetchBooking = useCallback(async () => {
@@ -202,7 +204,7 @@ export default function BookingDetailScreen() {
     setFabExpanded(!fabExpanded)
   }
 
-  const handleFabAction = async (action: 'edit' | 'print' | 'delete') => {
+  const handleFabAction = async (action: 'edit' | 'print' | 'printForm' | 'delete') => {
     setFabExpanded(false)
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
@@ -212,6 +214,9 @@ export default function BookingDetailScreen() {
         break
       case 'print':
         handlePrint()
+        break
+      case 'printForm':
+        handlePrintForm()
         break
       case 'delete':
         handleDelete()
@@ -225,17 +230,56 @@ export default function BookingDetailScreen() {
     setShowPrintDialog(true)
   }
 
+  const handlePrintForm = async () => {
+    if (!booking) return
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+    setShowFormPrintDialog(true)
+  }
+
+  const handleFormPrint = async (options: BookingFormPrintOptions) => {
+    if (!booking || !user) return
+
+    try {
+      // Pass user info for "Printed by" in PDF footer
+      const printerInfo = {
+        userName: user.name || user.username || 'Unknown User',
+        printDate: new Date().toISOString(),
+      }
+
+      const result = await PdfService.downloadBookingForm(booking, options, undefined, printerInfo)
+      if (result.success && result.filePath) {
+        await PdfService.sharePDF(result.filePath)
+      } else {
+        Alert.alert('Error', 'Failed to generate PDF')
+      }
+    } catch (error) {
+      console.error('Failed to print booking form:', error)
+      Alert.alert('Error', 'Failed to generate PDF')
+    }
+  }
+
   const handlePrintSubmit = async (options: PrintOptions) => {
     if (!booking || !user) return
 
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
-      const result = await PdfService.generateBookingCards(booking, {
-        categories: options.categories,
-        includePrices: options.includePrices,
-        outputFormat: options.outputFormat,
-      })
+      // Pass user info for "Printed by" in PDF footer
+      const printerInfo = {
+        userName: user.name || user.username || 'Unknown User',
+        printDate: new Date().toISOString(),
+      }
+
+      const result = await PdfService.generateBookingCards(
+        booking,
+        {
+          categories: options.categories,
+          includePrices: options.includePrices,
+          outputFormat: options.outputFormat,
+        },
+        undefined, // companyInfo - server fetches from Supabase
+        printerInfo
+      )
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to generate PDF')
@@ -650,14 +694,24 @@ export default function BookingDetailScreen() {
               <RNText style={styles.fabActionLabel}>Delete</RNText>
             </Pressable>
 
-            {/* Print Action */}
+            {/* Print Form Action */}
+            <Pressable
+              style={styles.fabAction}
+              onPress={() => handleFabAction('printForm')}
+              disabled={isDeleting}
+            >
+              <FileText size={18} color={COLORS.textInverse} />
+              <RNText style={styles.fabActionLabel}>Print Form</RNText>
+            </Pressable>
+
+            {/* Print Cards Action */}
             <Pressable
               style={styles.fabAction}
               onPress={() => handleFabAction('print')}
               disabled={isDeleting}
             >
               <Printer size={18} color={COLORS.textInverse} />
-              <RNText style={styles.fabActionLabel}>Print</RNText>
+              <RNText style={styles.fabActionLabel}>Print Cards</RNText>
             </Pressable>
 
             {/* Edit Action */}
@@ -691,6 +745,14 @@ export default function BookingDetailScreen() {
         booking={booking}
         onDismiss={() => setShowPrintDialog(false)}
         onPrint={handlePrintSubmit}
+      />
+
+      {/* Form Print Dialog */}
+      <BookingFormPrintDialog
+        visible={showFormPrintDialog}
+        booking={booking}
+        onDismiss={() => setShowFormPrintDialog(false)}
+        onPrint={handleFormPrint}
       />
     </YStack>
   )

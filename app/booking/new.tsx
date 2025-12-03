@@ -805,6 +805,8 @@ export default function NewBookingScreen() {
                 mode="date"
                 display="spinner"
                 onChange={handleStartDateChange}
+                locale="en-GB"
+                themeVariant="light"
                 style={{ height: 200 }}
               />
             </View>
@@ -836,6 +838,8 @@ export default function NewBookingScreen() {
                 display="spinner"
                 onChange={handleEndDateChange}
                 minimumDate={new Date(startDate)}
+                locale="en-GB"
+                themeVariant="light"
                 style={{ height: 200 }}
               />
             </View>

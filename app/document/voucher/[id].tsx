@@ -2,16 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { ActivityIndicator, Alert, StyleSheet, View, Pressable, Text as RNText } from 'react-native'
 import { YStack, XStack, Text, ScrollView } from 'tamagui'
-import { ChevronLeft, User, Calendar, DollarSign, ChevronRight, Edit3, Share2, Building2, CheckCircle, Clock, FileCheck } from '@tamagui/lucide-icons'
+import { ChevronLeft, User, Calendar, DollarSign, ChevronRight, Edit3, Share2, Building2, CheckCircle, Clock, FileCheck, Trash2 } from '@tamagui/lucide-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg'
 import * as Haptics from 'expo-haptics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFonts, CormorantGaramond_400Regular, CormorantGaramond_500Medium, CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond'
-import { getDocument, sharePDF } from '../../../src/services'
+import { getDocument, sharePDF, deleteDocument, checkCanDeleteDocument } from '../../../src/services'
 import type { PaymentVoucher, LineItem, UserReference } from '../../../src/types'
 import { useAuthStore } from '../../../src/store/authStore'
-import { canEditDocument, canPrintDocuments, getEditRestrictionMessage } from '../../../src/utils/permissions'
+import { canEditDocument, canPrintDocuments, canDeleteDocument, getEditRestrictionMessage } from '../../../src/utils/permissions'
 import { InvoiceDetailSkeletonLoader } from '../../../src/components/ui/SkeletonLoader'
 
 const COLORS = {
@@ -42,9 +42,18 @@ const COLORS = {
 const GoldGlowBackground = () => (
   <Svg height="300" width="100%" style={StyleSheet.absoluteFill}>
     <Defs>
-      <RadialGradient id="goldGlow" cx="50%" cy="0%">
+      <RadialGradient
+        id="goldGlow"
+        cx="85%"
+        cy="35%"
+        rx="70%"
+        ry="60%"
+        fx="85%"
+        fy="35%"
+      >
         <Stop offset="0%" stopColor={COLORS.kinGold} stopOpacity="0.15" />
-        <Stop offset="50%" stopColor={COLORS.kinGold} stopOpacity="0.05" />
+        <Stop offset="50%" stopColor={COLORS.kinGold} stopOpacity="0.06" />
+        <Stop offset="70%" stopColor={COLORS.kinGold} stopOpacity="0" />
         <Stop offset="100%" stopColor={COLORS.kinGold} stopOpacity="0" />
       </RadialGradient>
     </Defs>
@@ -187,7 +196,18 @@ export default function PaymentVoucherDetailScreen() {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
       setSharing(true)
-      await sharePDF(voucher)
+
+      // Pass printer info for "Printed by" and timestamp on PDF
+      const printerInfo = {
+        userName: currentUser.name || currentUser.username || 'Unknown',
+        printDate: new Date().toISOString(),
+      }
+
+      await sharePDF(voucher, undefined, printerInfo, {
+        id: currentUser.id,
+        name: currentUser.name || '',
+        username: currentUser.username || '',
+      })
     } catch (error) {
       console.error('Error sharing payment voucher:', error)
       Alert.alert('Error', 'Failed to share payment voucher')
@@ -196,8 +216,61 @@ export default function PaymentVoucherDetailScreen() {
     }
   }, [voucher, currentUser])
 
-  if (!fontsLoaded || loading) {
-    return <InvoiceDetailSkeletonLoader />
+  const handleDelete = useCallback(async () => {
+    if (!voucher || !currentUser) return
+
+    if (!canDeleteDocument(currentUser, voucher)) {
+      Alert.alert('Permission Denied', 'You do not have permission to delete documents')
+      return
+    }
+
+    // Pre-delete validation: Check if Payment Voucher can be deleted
+    try {
+      const validation = await checkCanDeleteDocument(voucher.id)
+      if (!validation.canDelete) {
+        Alert.alert('Cannot Delete', validation.reason || 'This document cannot be deleted')
+        return
+      }
+    } catch (error) {
+      console.error('Error validating deletion:', error)
+      Alert.alert('Error', 'Failed to validate deletion')
+      return
+    }
+
+    Alert.alert(
+      'Delete Payment Voucher',
+      `Delete ${voucher.documentNumber}? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await deleteDocument(voucher.id)
+              if (success) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                router.back()
+              } else {
+                Alert.alert('Error', 'Failed to delete payment voucher')
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete payment voucher')
+            }
+          },
+        },
+      ]
+    )
+  }, [voucher, currentUser, router])
+
+  // Show skeleton while loading data (don't block on fonts - skeleton doesn't need them)
+  if (loading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <InvoiceDetailSkeletonLoader paddingTop={insets.top} />
+      </>
+    )
   }
 
   if (!voucher) {
@@ -221,104 +294,63 @@ export default function PaymentVoucherDetailScreen() {
       />
 
       {/* Dark Header with Gold Glow */}
-      <View style={{ backgroundColor: COLORS.sumiInk }}>
-        <GoldGlowBackground />
-        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 20 }}>
-          <XStack alignItems="center" justifyContent="space-between">
+      <View style={styles.headerContainer}>
+        <LinearGradient
+          colors={[COLORS.sumiInk, COLORS.sumiInkLight]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.header, { paddingTop: insets.top }]}
+        >
+          <View style={styles.goldGlowContainer}>
+            <GoldGlowBackground />
+          </View>
+          <View style={styles.headerNav}>
             <Pressable
               onPress={handleBack}
-              hitSlop={8}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-                paddingVertical: 8,
-              }}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <ChevronLeft size={20} color="rgba(255,255,255,0.8)" />
-              <RNText style={{
-                fontSize: 14,
-                fontWeight: '500',
-                color: 'rgba(255,255,255,0.8)',
-              }}>
-                Back
-              </RNText>
+              <RNText style={styles.backText}>Back</RNText>
             </Pressable>
-            <Text
-              fontFamily="CormorantGaramond_500Medium"
-              fontSize={18}
-              color={COLORS.textInverse}
-            >
-              Payment Voucher
-            </Text>
+            <RNText style={styles.headerTitle}>Payment Voucher</RNText>
             <View style={{ width: 80 }} />
-          </XStack>
-        </View>
+          </View>
+        </LinearGradient>
       </View>
 
-      {/* Floating Amount Card - overlaps header */}
-      <View
-        style={{
-          backgroundColor: COLORS.bgCard,
-          marginHorizontal: 20,
-          marginTop: -16,
-          borderRadius: 16,
-          padding: 20,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-          elevation: 5,
-        }}
-      >
-            <XStack justifyContent="space-between" alignItems="flex-start" marginBottom={4}>
-              <YStack flex={1}>
-                <Text fontSize={12} color={COLORS.textMuted} textTransform="uppercase" letterSpacing={0.5} marginBottom={4}>
-                  Total Amount
-                </Text>
-                <Text
-                  fontFamily="CormorantGaramond_600SemiBold"
-                  fontSize={36}
-                  color={COLORS.kinGold}
-                  lineHeight={42}
-                >
-                  {formatCurrency(voucher.total, voucher.currency)}
-                </Text>
-              </YStack>
-              <View
-                style={{
-                  backgroundColor: statusColors.bg,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: statusColors.border + '20',
-                }}
-              >
-                <Text fontSize={12} fontWeight="600" color={statusColors.text}>
-                  {voucher.status.toUpperCase()}
-                </Text>
-              </View>
-            </XStack>
+      {/* Floating Amount Card - positioned to overlap header */}
+      <View style={styles.amountCard}>
+        <View style={styles.amountCardHeader}>
+          <RNText style={styles.amountLabel}>TOTAL AMOUNT</RNText>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: statusColors.bg },
+            ]}
+          >
+            <View style={[styles.statusDot, { backgroundColor: statusColors.text }]} />
+            <RNText
+              style={[
+                styles.statusText,
+                { color: statusColors.text },
+              ]}
+            >
+              {voucher.status.toUpperCase()}
+            </RNText>
+          </View>
+        </View>
 
-            <View style={{ height: 1, backgroundColor: COLORS.borderSubtle, marginVertical: 14 }} />
+        <RNText style={styles.amountValue}>{formatCurrency(voucher.total, voucher.currency)}</RNText>
 
-            <YStack gap={6}>
-              <XStack justifyContent="space-between">
-                <Text fontSize={13} color={COLORS.textMuted}>Document Number</Text>
-                <Text fontSize={13} fontWeight="600" color={COLORS.textPrimary}>
-                  {voucher.documentNumber}
-                </Text>
-              </XStack>
-              {voucher.paymentDueDate && (
-                <XStack justifyContent="space-between">
-                  <Text fontSize={13} color={COLORS.textMuted}>Payment Due</Text>
-                  <Text fontSize={13} fontWeight="600" color={COLORS.shuVermillion}>
-                    {formatDate(voucher.paymentDueDate)}
-                  </Text>
-                </XStack>
-              )}
-            </YStack>
+        <View style={styles.amountCardFooter}>
+          <RNText style={styles.documentNumber}>{voucher.documentNumber}</RNText>
+          {voucher.paymentDueDate && (
+            <RNText style={styles.dueDate}>
+              Due: {formatDate(voucher.paymentDueDate)}
+            </RNText>
+          )}
+        </View>
       </View>
 
       {/* Scrollable Content */}
@@ -370,15 +402,17 @@ export default function PaymentVoucherDetailScreen() {
               <XStack alignItems="center" gap={12}>
                 <View
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
                     backgroundColor: COLORS.kinGoldSoft,
                     alignItems: 'center',
                     justifyContent: 'center',
+                    borderWidth: 2,
+                    borderColor: COLORS.kinGold,
                   }}
                 >
-                  <Text fontSize={14} fontWeight="600" color={COLORS.kinGold}>
+                  <Text fontSize={16} fontWeight="600" color={COLORS.kinGold}>
                     {getInitials(voucher.payeeName)}
                   </Text>
                 </View>
@@ -799,6 +833,25 @@ export default function PaymentVoucherDetailScreen() {
         }}
       >
         <XStack gap={12}>
+          {currentUser && voucher && canDeleteDocument(currentUser, voucher) && (
+            <Pressable
+              onPress={handleDelete}
+              style={{
+                width: 48,
+                height: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: COLORS.shuVermillionSoft,
+                borderRadius: 10,
+                borderWidth: 1.5,
+                borderColor: COLORS.shuVermillion + '30',
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Trash2 size={18} color={COLORS.shuVermillion} />
+            </Pressable>
+          )}
+
           {currentUser && voucher && canEditDocument(currentUser, voucher) && (
             <Pressable
               onPress={handleEdit}
@@ -869,3 +922,114 @@ export default function PaymentVoucherDetailScreen() {
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  // Header Container
+  headerContainer: {
+    zIndex: 10,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 80, // Extended padding for card overlap
+    position: 'relative',
+  },
+  goldGlowContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  headerNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    width: 80,
+  },
+  backText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.8)',
+  },
+  headerTitle: {
+    fontFamily: 'CormorantGaramond_500Medium',
+    fontSize: 18,
+    fontWeight: '500',
+    color: COLORS.textInverse,
+    textAlign: 'center',
+    letterSpacing: 0.4,
+  },
+
+  // Floating Amount Card
+  amountCard: {
+    backgroundColor: COLORS.bgCard,
+    marginHorizontal: 16,
+    marginTop: -60, // Pull up significantly into header area
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: COLORS.sumiInk,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 32,
+    elevation: 12,
+    zIndex: 20, // Above header (zIndex: 10)
+  },
+  amountCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  amountLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textMuted,
+    letterSpacing: 0.5,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  amountValue: {
+    fontFamily: 'CormorantGaramond_600SemiBold',
+    fontSize: 32,
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  amountCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  documentNumber: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  dueDate: {
+    fontSize: 12,
+    color: COLORS.shuVermillion,
+  },
+})

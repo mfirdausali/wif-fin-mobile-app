@@ -2,16 +2,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { ActivityIndicator, Alert, StyleSheet, View, Pressable, Text as RNText } from 'react-native'
 import { YStack, XStack, Text, ScrollView } from 'tamagui'
-import { ChevronLeft, User, Calendar, DollarSign, ChevronRight, Edit3, Share2, FileText } from '@tamagui/lucide-icons'
+import { ChevronLeft, User, Calendar, DollarSign, ChevronRight, Edit3, Share2, FileText, Trash2, Receipt, CreditCard } from '@tamagui/lucide-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg'
 import * as Haptics from 'expo-haptics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFonts, CormorantGaramond_400Regular, CormorantGaramond_500Medium, CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond'
-import { getDocument, sharePDF } from '../../../src/services'
+import { getDocument, sharePDF, deleteDocument, getInvoicePaymentStatus, getInvoiceReceipts } from '../../../src/services'
+import type { InvoicePaymentStatus, LinkedReceipt } from '../../../src/services/documents/documentService'
 import type { Invoice, LineItem } from '../../../src/types'
 import { useAuthStore } from '../../../src/store/authStore'
-import { canEditDocument, canPrintDocuments, getEditRestrictionMessage } from '../../../src/utils/permissions'
+import { canEditDocument, canPrintDocuments, canDeleteDocument, getEditRestrictionMessage } from '../../../src/utils/permissions'
 import { InvoiceDetailSkeletonLoader } from '../../../src/components/ui/SkeletonLoader'
 
 // WIF Japan Design System Colors
@@ -61,6 +62,8 @@ export default function InvoiceDetailScreen() {
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [loading, setLoading] = useState(true)
   const [sharingPDF, setSharingPDF] = useState(false)
+  const [paymentStatus, setPaymentStatus] = useState<InvoicePaymentStatus | null>(null)
+  const [linkedReceipts, setLinkedReceipts] = useState<LinkedReceipt[]>([])
 
   const [fontsLoaded] = useFonts({
     CormorantGaramond_400Regular,
@@ -75,6 +78,16 @@ export default function InvoiceDetailScreen() {
       setLoading(true)
       const doc = await getDocument(id, 'invoice') as Invoice | null
       setInvoice(doc)
+
+      // Load payment status and linked receipts
+      if (doc) {
+        const [status, receipts] = await Promise.all([
+          getInvoicePaymentStatus(id),
+          getInvoiceReceipts(id),
+        ])
+        setPaymentStatus(status)
+        setLinkedReceipts(receipts)
+      }
     } catch (error) {
       console.error('Error loading invoice:', error)
       Alert.alert('Error', 'Failed to load invoice')
@@ -116,7 +129,18 @@ export default function InvoiceDetailScreen() {
     try {
       setSharingPDF(true)
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-      await sharePDF(invoice)
+
+      // Pass printer info for "Printed by" and timestamp on PDF
+      const printerInfo = {
+        userName: user.name || user.username || 'Unknown',
+        printDate: new Date().toISOString(),
+      }
+
+      await sharePDF(invoice, undefined, printerInfo, {
+        id: user.id,
+        name: user.name || '',
+        username: user.username || '',
+      })
     } catch (error) {
       console.error('Error sharing PDF:', error)
       Alert.alert('Error', 'Failed to share PDF')
@@ -124,6 +148,35 @@ export default function InvoiceDetailScreen() {
       setSharingPDF(false)
     }
   }, [invoice, user])
+
+  const handleDelete = useCallback(() => {
+    if (!invoice || !user) return
+
+    Alert.alert(
+      'Delete Document',
+      `Delete ${invoice.documentNumber}? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await deleteDocument(invoice.id)
+              if (success) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                router.back()
+              } else {
+                Alert.alert('Error', 'Failed to delete document')
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete document')
+            }
+          },
+        },
+      ]
+    )
+  }, [invoice, user, router])
 
   const getStatusColor = (status: string, isOverdue: boolean) => {
     if (isOverdue) return COLORS.shuVermillion
@@ -180,7 +233,8 @@ export default function InvoiceDetailScreen() {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
   }
 
-  if (!fontsLoaded || loading) {
+  // Show skeleton while loading data (don't block on fonts - skeleton doesn't need them)
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <Stack.Screen
@@ -188,7 +242,7 @@ export default function InvoiceDetailScreen() {
             headerShown: false,
           }}
         />
-        <InvoiceDetailSkeletonLoader />
+        <InvoiceDetailSkeletonLoader paddingTop={insets.top} />
       </View>
     )
   }
@@ -217,6 +271,7 @@ export default function InvoiceDetailScreen() {
   const taxAmount = invoice.taxRate ? invoice.subtotal * (invoice.taxRate / 100) : 0
   const canEdit = user && canEditDocument(user, invoice)
   const canShare = user && canPrintDocuments(user)
+  const canDelete = user && canDeleteDocument(user, invoice)
 
   return (
     <YStack flex={1} backgroundColor={COLORS.bgSecondary}>
@@ -307,6 +362,65 @@ export default function InvoiceDetailScreen() {
               Due: {formatDate(invoice.dueDate)}
             </RNText>
           </View>
+
+          {/* Payment Progress Section */}
+          {paymentStatus && paymentStatus.paymentCount > 0 && (
+            <View style={styles.paymentProgressSection}>
+              <View style={styles.paymentProgressHeader}>
+                <RNText style={styles.paymentProgressLabel}>Payment Progress</RNText>
+                <RNText style={[
+                  styles.paymentStatusBadge,
+                  paymentStatus.paymentStatus === 'fully_paid' && styles.paymentStatusFull,
+                  paymentStatus.paymentStatus === 'partially_paid' && styles.paymentStatusPartial,
+                ]}>
+                  {paymentStatus.paymentStatus === 'fully_paid' ? 'FULLY PAID' :
+                   paymentStatus.paymentStatus === 'partially_paid' ? 'PARTIAL' : 'UNPAID'}
+                </RNText>
+              </View>
+
+              {/* Progress Bar */}
+              <View style={styles.progressBarContainer}>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${Math.min(paymentStatus.percentPaid, 100)}%` },
+                      paymentStatus.paymentStatus === 'fully_paid' && styles.progressBarFillComplete,
+                    ]}
+                  />
+                </View>
+                <RNText style={styles.progressPercent}>{paymentStatus.percentPaid}%</RNText>
+              </View>
+
+              {/* Payment Summary */}
+              <View style={styles.paymentSummaryRow}>
+                <View style={styles.paymentSummaryItem}>
+                  <RNText style={styles.paymentSummaryLabel}>Paid</RNText>
+                  <RNText style={styles.paymentSummaryValuePaid}>
+                    {formatCurrency(paymentStatus.amountPaid)}
+                  </RNText>
+                </View>
+                <View style={styles.paymentSummaryDivider} />
+                <View style={styles.paymentSummaryItem}>
+                  <RNText style={styles.paymentSummaryLabel}>Balance Due</RNText>
+                  <RNText style={[
+                    styles.paymentSummaryValueDue,
+                    paymentStatus.balanceDue <= 0 && styles.paymentSummaryValueZero,
+                  ]}>
+                    {formatCurrency(Math.max(paymentStatus.balanceDue, 0))}
+                  </RNText>
+                </View>
+              </View>
+
+              {/* Receipt Count */}
+              <View style={styles.receiptCountRow}>
+                <Receipt size={14} color={COLORS.textMuted} />
+                <RNText style={styles.receiptCountText}>
+                  {paymentStatus.paymentCount} payment{paymentStatus.paymentCount > 1 ? 's' : ''} received
+                </RNText>
+              </View>
+            </View>
+          )}
         </View>
       </View>
 
@@ -464,6 +578,16 @@ export default function InvoiceDetailScreen() {
 
       {/* Action Bar */}
       <View style={[styles.actionBar, { paddingBottom: insets.bottom + 16 }]}>
+        {canDelete && (
+          <Pressable
+            style={styles.deleteButton}
+            onPress={handleDelete}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Trash2 size={18} color={COLORS.shuVermillion} />
+          </Pressable>
+        )}
+
         {canEdit && (
           <Pressable
             style={styles.editButton}
@@ -477,7 +601,7 @@ export default function InvoiceDetailScreen() {
 
         {canShare && (
           <Pressable
-            style={[styles.shareButton, !canEdit && styles.shareButtonFull]}
+            style={[styles.shareButton, !canEdit && !canDelete && styles.shareButtonFull]}
             onPress={handleShare}
             disabled={sharingPDF}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -582,6 +706,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 32,
     elevation: 12,
+    zIndex: 20, // Above header (zIndex: 10)
   },
   amountCardHeader: {
     flexDirection: 'row',
@@ -631,6 +756,115 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
+
+  // Payment Progress Styles
+  paymentProgressSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderSubtle,
+  },
+  paymentProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  paymentProgressLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textMuted,
+    letterSpacing: 0.3,
+  },
+  paymentStatusBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    backgroundColor: COLORS.bgSecondary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    letterSpacing: 0.5,
+    overflow: 'hidden',
+  },
+  paymentStatusFull: {
+    color: COLORS.midoriJade,
+    backgroundColor: COLORS.midoriJadeSoft,
+  },
+  paymentStatusPartial: {
+    color: COLORS.kinGold,
+    backgroundColor: COLORS.kinGoldSoft,
+  },
+  progressBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  progressBarBackground: {
+    flex: 1,
+    height: 8,
+    backgroundColor: COLORS.bgSecondary,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.kinGold,
+    borderRadius: 4,
+  },
+  progressBarFillComplete: {
+    backgroundColor: COLORS.midoriJade,
+  },
+  progressPercent: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    width: 40,
+    textAlign: 'right',
+  },
+  paymentSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  paymentSummaryItem: {
+    flex: 1,
+  },
+  paymentSummaryDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: COLORS.borderSubtle,
+    marginHorizontal: 16,
+  },
+  paymentSummaryLabel: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginBottom: 2,
+  },
+  paymentSummaryValuePaid: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.midoriJade,
+  },
+  paymentSummaryValueDue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.shuVermillion,
+  },
+  paymentSummaryValueZero: {
+    color: COLORS.midoriJade,
+  },
+  receiptCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  receiptCountText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+
   dueDate: {
     fontSize: 12,
     color: COLORS.textMuted,
@@ -851,6 +1085,16 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.borderSubtle,
     flexDirection: 'row',
     gap: 12,
+  },
+  deleteButton: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.shuVermillionSoft,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.shuVermillion + '30',
   },
   editButton: {
     flex: 1,

@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { BiometricAuthService, StoredCredentials, StoredUserData } from '../services/auth/biometricAuth'
 
-export type UserRole = 'viewer' | 'accountant' | 'manager' | 'admin'
+export type UserRole = 'viewer' | 'accountant' | 'manager' | 'admin' | 'operations'
 
 export interface User {
   id: string
@@ -52,12 +52,19 @@ export type Permission =
   | 'manage_users'
   | 'view_audit_logs'
   | 'manage_settings'
+  | 'view_bookings'
+  | 'create_bookings'
+  | 'edit_bookings'
+  | 'delete_bookings'
+  | 'print_bookings'
 
 // Role permissions matrix (matching web app)
 const rolePermissions: Record<UserRole, Permission[]> = {
   viewer: [
     'view_documents',
     'print_documents',
+    'view_bookings',
+    'print_bookings',
   ],
   accountant: [
     'view_documents',
@@ -65,6 +72,10 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     'edit_documents',
     'print_documents',
     'manage_accounts',
+    'view_bookings',
+    'create_bookings',
+    'edit_bookings',
+    'print_bookings',
   ],
   manager: [
     'view_documents',
@@ -74,6 +85,11 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     'approve_documents',
     'print_documents',
     'manage_accounts',
+    'view_bookings',
+    'create_bookings',
+    'edit_bookings',
+    'delete_bookings',
+    'print_bookings',
   ],
   admin: [
     'view_documents',
@@ -86,6 +102,22 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     'manage_users',
     'view_audit_logs',
     'manage_settings',
+    'view_bookings',
+    'create_bookings',
+    'edit_bookings',
+    'delete_bookings',
+    'print_bookings',
+  ],
+  // Operations: Limited to Payment Vouchers and Bookings only
+  operations: [
+    'view_documents',     // Limited to PV only (enforced in UI)
+    'create_documents',   // Limited to PV only (enforced in UI)
+    'edit_documents',     // Limited to PV only (enforced in UI)
+    'print_documents',
+    'view_bookings',
+    'create_bookings',
+    'edit_bookings',
+    'print_bookings',
   ],
 }
 

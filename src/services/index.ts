@@ -18,8 +18,11 @@ export * from './accounts/accountService'
 // Booking services
 export * from './bookings/bookingService'
 
-// PDF services
+// PDF services (document PDFs)
 export * from './pdf/pdfService'
+
+// Print services (booking PDFs)
+export * from './print/pdfService'
 
 // Company services
 export * from './company/companyService'

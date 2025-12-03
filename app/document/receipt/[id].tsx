@@ -2,16 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { ActivityIndicator, Alert, StyleSheet, View, Pressable, Text as RNText } from 'react-native'
 import { YStack, XStack, Text, ScrollView } from 'tamagui'
-import { ChevronLeft, User, Calendar, DollarSign, ChevronRight, Edit3, Share2, Receipt as ReceiptIcon, UserCheck, Link, CreditCard } from '@tamagui/lucide-icons'
+import { ChevronLeft, User, Calendar, DollarSign, ChevronRight, Edit3, Share2, Receipt as ReceiptIcon, UserCheck, Link, CreditCard, FileText, Trash2 } from '@tamagui/lucide-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg'
 import * as Haptics from 'expo-haptics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFonts, CormorantGaramond_400Regular, CormorantGaramond_500Medium, CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond'
-import { getDocument, sharePDF } from '../../../src/services'
+import { getDocument, sharePDF, deleteDocument } from '../../../src/services'
 import type { Receipt } from '../../../src/types'
 import { useAuthStore } from '../../../src/store/authStore'
-import { canEditDocument, canPrintDocuments, getEditRestrictionMessage } from '../../../src/utils/permissions'
+import { canEditDocument, canPrintDocuments, canDeleteDocument, getEditRestrictionMessage } from '../../../src/utils/permissions'
 import { InvoiceDetailSkeletonLoader } from '../../../src/components/ui/SkeletonLoader'
 
 const COLORS = {
@@ -106,7 +106,18 @@ export default function ReceiptDetailPage() {
     try {
       setSharingPDF(true)
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-      await sharePDF(receipt)
+
+      // Pass printer info for "Printed by" and timestamp on PDF
+      const printerInfo = {
+        userName: user.name || user.username || 'Unknown',
+        printDate: new Date().toISOString(),
+      }
+
+      await sharePDF(receipt, undefined, printerInfo, {
+        id: user.id,
+        name: user.name || '',
+        username: user.username || '',
+      })
     } catch (error) {
       console.error('Error sharing PDF:', error)
       Alert.alert('Error', 'Failed to share receipt PDF')
@@ -120,6 +131,35 @@ export default function ReceiptDetailPage() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     router.push(`/document/invoice/${receipt.linkedInvoiceId}`)
   }, [receipt, router])
+
+  const handleDelete = useCallback(() => {
+    if (!receipt || !user) return
+
+    Alert.alert(
+      'Delete Document',
+      `Delete ${receipt.documentNumber}? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await deleteDocument(receipt.id)
+              if (success) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                router.back()
+              } else {
+                Alert.alert('Error', 'Failed to delete document')
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete document')
+            }
+          },
+        },
+      ]
+    )
+  }, [receipt, user, router])
 
   const formatCurrency = (amount: number, currency?: string): string => {
     const curr = currency || receipt?.currency || 'MYR'
@@ -166,11 +206,12 @@ export default function ReceiptDetailPage() {
       .substring(0, 2)
   }
 
-  if (!fontsLoaded || loading) {
+  // Show skeleton while loading data (don't block on fonts - skeleton doesn't need them)
+  if (loading) {
     return (
       <View style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
-        <InvoiceDetailSkeletonLoader />
+        <InvoiceDetailSkeletonLoader paddingTop={insets.top} />
       </View>
     )
   }
@@ -191,6 +232,7 @@ export default function ReceiptDetailPage() {
   const statusConfig = getStatusConfig(receipt.status)
   const canEdit = user ? canEditDocument(user, receipt) : false
   const canShare = user ? canPrintDocuments(user) : false
+  const canDelete = user ? canDeleteDocument(user, receipt) : false
 
   return (
     <View style={styles.container}>
@@ -239,64 +281,36 @@ export default function ReceiptDetailPage() {
           </View>
         </LinearGradient>
 
-        {/* Floating Amount Card - overlaps header */}
+        {/* Floating Amount Card - positioned to overlap header */}
         <View style={styles.amountCard}>
-          <YStack padding={24} gap={16}>
-            <XStack justifyContent="space-between" alignItems="flex-start">
-              <YStack gap={4}>
-                <Text
-                  fontFamily="CormorantGaramond_400Regular"
-                  fontSize={12}
-                  color={COLORS.textMuted}
-                  letterSpacing={1}
-                  textTransform="uppercase"
-                >
-                  Amount Received
-                </Text>
-                <Text
-                  fontFamily="CormorantGaramond_600SemiBold"
-                  fontSize={36}
-                  color={COLORS.kinGold}
-                  letterSpacing={-0.5}
-                >
-                  {formatCurrency(receipt.amount)}
-                </Text>
-              </YStack>
-
-              <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
-                <View style={[styles.statusDot, { backgroundColor: statusConfig.textColor }]} />
-                <Text
-                  fontSize={11}
-                  fontWeight="600"
-                  color={statusConfig.textColor}
-                  textTransform="uppercase"
-                  letterSpacing={0.3}
-                >
-                  {statusConfig.label}
-                </Text>
-              </View>
-            </XStack>
-
-            <View style={styles.divider} />
-
-            <XStack justifyContent="space-between" alignItems="center">
-              <Text
-                fontFamily="CormorantGaramond_400Regular"
-                fontSize={14}
-                color={COLORS.textMuted}
+          <View style={styles.amountCardHeader}>
+            <RNText style={styles.amountLabel}>AMOUNT RECEIVED</RNText>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: statusConfig.bgColor },
+              ]}
+            >
+              <View style={[styles.statusDot, { backgroundColor: statusConfig.textColor }]} />
+              <RNText
+                style={[
+                  styles.statusText,
+                  { color: statusConfig.textColor },
+                ]}
               >
-                Receipt No.
-              </Text>
-              <Text
-                fontFamily="CormorantGaramond_600SemiBold"
-                fontSize={16}
-                color={COLORS.textPrimary}
-                letterSpacing={0.5}
-              >
-                {receipt.documentNumber}
-              </Text>
-            </XStack>
-          </YStack>
+                {statusConfig.label}
+              </RNText>
+            </View>
+          </View>
+
+          <RNText style={styles.amountValue}>{formatCurrency(receipt.amount)}</RNText>
+
+          <View style={styles.amountCardFooter}>
+            <RNText style={styles.documentNumber}>{receipt.documentNumber}</RNText>
+            <RNText style={styles.receiptDate}>
+              {formatDate(receipt.receiptDate)}
+            </RNText>
+          </View>
         </View>
       </View>
 
@@ -416,6 +430,9 @@ export default function ReceiptDetailPage() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleGroup}>
+                  <View style={styles.sectionIcon}>
+                    <FileText size={15} color={COLORS.kinGold} />
+                  </View>
                   <RNText style={styles.sectionTitle}>Notes</RNText>
                 </View>
               </View>
@@ -429,43 +446,44 @@ export default function ReceiptDetailPage() {
 
       {/* Action Bar */}
       <View style={[styles.actionBar, { paddingBottom: insets.bottom + 16 }]}>
-        <View style={styles.actionBarContent}>
-          {canEdit && (
-            <Pressable
-              onPress={handleEdit}
-              style={({ pressed }) => [
-                styles.actionButton,
-                styles.actionButtonSecondary,
-                pressed && styles.actionButtonPressed,
-              ]}
-            >
-              <Edit3 size={18} color={COLORS.kinGold} />
-              <RNText style={styles.actionButtonSecondaryText}>Edit</RNText>
-            </Pressable>
-          )}
+        {canDelete && (
+          <Pressable
+            style={styles.deleteButton}
+            onPress={handleDelete}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Trash2 size={18} color={COLORS.shuVermillion} />
+          </Pressable>
+        )}
 
-          {canShare && (
-            <Pressable
-              onPress={handleSharePDF}
-              disabled={sharingPDF}
-              style={({ pressed }) => [
-                styles.actionButton,
-                styles.actionButtonPrimary,
-                pressed && styles.actionButtonPressed,
-                !canEdit && { flex: 1 },
-              ]}
-            >
-              {sharingPDF ? (
-                <ActivityIndicator size="small" color={COLORS.textInverse} />
-              ) : (
-                <>
-                  <Share2 size={18} color={COLORS.textInverse} />
-                  <RNText style={styles.actionButtonPrimaryText}>Share PDF</RNText>
-                </>
-              )}
-            </Pressable>
-          )}
-        </View>
+        {canEdit && (
+          <Pressable
+            style={styles.editButton}
+            onPress={handleEdit}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Edit3 size={18} color={COLORS.textSecondary} />
+            <RNText style={styles.editButtonText}>Edit</RNText>
+          </Pressable>
+        )}
+
+        {canShare && (
+          <Pressable
+            style={[styles.shareButton, !canEdit && !canDelete && styles.shareButtonFull]}
+            onPress={handleSharePDF}
+            disabled={sharingPDF}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            {sharingPDF ? (
+              <ActivityIndicator size="small" color={COLORS.textInverse} />
+            ) : (
+              <>
+                <Share2 size={18} color={COLORS.textInverse} />
+                <RNText style={styles.shareButtonText}>Share PDF</RNText>
+              </>
+            )}
+          </Pressable>
+        )}
       </View>
     </View>
   )
@@ -523,11 +541,24 @@ const styles = StyleSheet.create({
     marginTop: -60, // Pull up significantly into header area
     marginBottom: 16,
     borderRadius: 16,
+    padding: 20,
     shadowColor: COLORS.sumiInk,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.12,
     shadowRadius: 32,
     elevation: 12,
+  },
+  amountCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  amountLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textMuted,
+    letterSpacing: 0.5,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -542,9 +573,32 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.borderSubtle,
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  amountValue: {
+    fontFamily: 'CormorantGaramond_600SemiBold',
+    fontSize: 32,
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  amountCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  documentNumber: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  receiptDate: {
+    fontSize: 12,
+    color: COLORS.textMuted,
   },
 
   // Section Card
@@ -600,15 +654,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   customerAvatar: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     backgroundColor: COLORS.kinGoldSoft,
-    borderRadius: 20,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.kinGold,
   },
   customerAvatarText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.kinGold,
   },
@@ -695,47 +751,58 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    paddingHorizontal: 20,
     paddingTop: 16,
     backgroundColor: COLORS.bgCard,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderSubtle,
-  },
-  actionBarContent: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
     gap: 12,
   },
-  actionButton: {
+  deleteButton: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.shuVermillionSoft,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.shuVermillion + '30',
+  },
+  editButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 15,
-    borderRadius: 10,
-  },
-  actionButtonPrimary: {
-    backgroundColor: COLORS.sumiInk,
-  },
-  actionButtonSecondary: {
     backgroundColor: COLORS.bgPrimary,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: COLORS.borderMedium,
   },
-  actionButtonPrimaryText: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textInverse,
-  },
-  actionButtonSecondaryText: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
+  editButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
-  actionButtonPressed: {
-    opacity: 0.7,
+  shareButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 15,
+    backgroundColor: COLORS.sumiInk,
+    borderRadius: 10,
+  },
+  shareButtonFull: {
+    flex: 1,
+  },
+  shareButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textInverse,
   },
 
   errorContainer: {

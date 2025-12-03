@@ -26,7 +26,7 @@ import {
   DashboardSkeletonLoader,
   DocumentContextMenu,
 } from '../../src/components/ui'
-import { canEditDocument, canPrintDocuments } from '../../src/utils/permissions'
+import { canEditDocument, canDeleteDocument, canPrintDocuments } from '../../src/utils/permissions'
 import { sharePDF, deleteDocument } from '../../src/services'
 import { Alert } from 'react-native'
 import { AccountCarousel, ActionGrid } from '../../src/components/dashboard'
@@ -460,7 +460,7 @@ export default function DashboardScreen() {
             onDelete={handleDeleteDocument}
             canEdit={canEditDocument(user, selectedDocument)}
             canShare={canPrintDocuments(user)}
-            canDelete={canEditDocument(user, selectedDocument)}
+            canDelete={canDeleteDocument(user, selectedDocument)}
           />
         )}
       </ScrollView>
@@ -622,7 +622,7 @@ export default function DashboardScreen() {
           onDelete={handleDeleteDocument}
           canEdit={canEditDocument(user, selectedDocument)}
           canShare={canPrintDocuments(user)}
-          canDelete={canEditDocument(user, selectedDocument)}
+          canDelete={canDeleteDocument(user, selectedDocument)}
         />
       )}
     </ScrollView>

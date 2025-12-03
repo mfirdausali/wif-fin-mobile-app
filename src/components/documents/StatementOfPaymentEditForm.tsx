@@ -1,14 +1,85 @@
-import { useState } from 'react'
-import { YStack, XStack, Text } from 'tamagui'
+import { useState, memo } from 'react'
+import { YStack, XStack, Text, ScrollView } from 'tamagui'
+import { Calendar, FileText, Link } from '@tamagui/lucide-icons'
+import { Pressable, StyleSheet, View, Platform, Modal } from 'react-native'
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import * as Haptics from 'expo-haptics'
 
 import { Input, Button, Card } from '../ui'
 import type { StatementOfPayment } from '../../types'
 
+// Section Header Component
+const SectionHeader = memo(({
+  title,
+  theme
+}: {
+  title: string;
+  theme: { gold: string; textMuted: string };
+}) => (
+  <XStack alignItems="center" gap="$2" marginBottom="$4">
+    <View style={[styles.sectionAccent, { backgroundColor: theme.gold }]} />
+    <Text
+      fontSize={11}
+      fontWeight="600"
+      letterSpacing={1.2}
+      textTransform="uppercase"
+      color={theme.textMuted}
+    >
+      {title}
+    </Text>
+  </XStack>
+))
+
+SectionHeader.displayName = 'SectionHeader'
+
+// Form Field Component
+const FormField = memo(({
+  label,
+  required,
+  children,
+  theme
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+  theme: { textSecondary: string; vermillion: string };
+}) => (
+  <YStack marginBottom="$4">
+    <Text fontSize={13} fontWeight="500" color={theme.textSecondary} marginBottom="$2">
+      {label}
+      {required && <Text color={theme.vermillion}> *</Text>}
+    </Text>
+    {children}
+  </YStack>
+))
+
+FormField.displayName = 'FormField'
+
 interface StatementOfPaymentEditFormProps {
   document: StatementOfPayment
   onSave: (updates: Partial<StatementOfPayment>) => Promise<void>
+  onCancel: () => void
   isSaving: boolean
+  theme: {
+    bgPrimary: string
+    bgSecondary: string
+    bgCard: string
+    borderSubtle: string
+    borderMedium: string
+    textPrimary: string
+    textSecondary: string
+    textMuted: string
+    textFaint: string
+    gold: string
+    goldSoft: string
+    vermillion: string
+    vermillionSoft: string
+    jade: string
+    jadeSoft: string
+    error: string
+    indigo?: string
+    indigoSoft?: string
+  }
 }
 
 const PAYMENT_METHODS = [
@@ -26,11 +97,20 @@ const TRANSACTION_FEE_TYPES = [
   'Bank Service Charge',
 ]
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 export function StatementOfPaymentEditForm({
   document,
   onSave,
+  onCancel,
   isSaving,
+  theme,
 }: StatementOfPaymentEditFormProps) {
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [formData, setFormData] = useState({
     paymentDate: document.paymentDate,
     paymentMethod: document.paymentMethod,
@@ -43,9 +123,22 @@ export function StatementOfPaymentEditForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Use indigo colors for linked voucher section, fallback to gold if not provided
+  const indigoColor = theme.indigo || '#4A5A7A'
+  const indigoSoftColor = theme.indigoSoft || 'rgba(74, 90, 122, 0.1)'
+
   const calculateTotalDeducted = () => {
     const transactionFee = parseFloat(formData.transactionFee) || 0
     return document.total + transactionFee
+  }
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false)
+    }
+    if (selectedDate) {
+      setFormData({ ...formData, paymentDate: selectedDate.toISOString().split('T')[0] })
+    }
   }
 
   const validate = () => {
@@ -91,263 +184,365 @@ export function StatementOfPaymentEditForm({
   }
 
   return (
-    <YStack flex={1} gap="$4">
-      {/* Linked Voucher Info */}
-      <Card backgroundColor="$blue2" borderColor="$blue7">
-        <Text fontSize="$5" fontWeight="600" color="$blue11" marginBottom="$3">
-          Linked Payment Voucher
-        </Text>
-
-        <XStack justifyContent="space-between" marginBottom="$2">
-          <Text fontSize="$4" color="$blue11">
-            Voucher Number:
-          </Text>
-          <Text fontSize="$4" fontWeight="600" color="$blue11">
-            {document.linkedVoucherNumber || 'N/A'}
-          </Text>
-        </XStack>
-
-        <XStack justifyContent="space-between" marginBottom="$2">
-          <Text fontSize="$4" color="$blue11">
-            Payee:
-          </Text>
-          <Text fontSize="$4" fontWeight="600" color="$blue11">
-            {document.payeeName}
-          </Text>
-        </XStack>
-
-        <XStack justifyContent="space-between">
-          <Text fontSize="$4" color="$blue11">
-            Amount:
-          </Text>
-          <Text fontSize="$4" fontWeight="600" color="$blue11">
-            {document.currency} {document.total.toFixed(2)}
-          </Text>
-        </XStack>
-      </Card>
-
-      {/* Payment Details */}
-      <Card>
-        <Text fontSize="$5" fontWeight="600" color="$color" marginBottom="$3">
-          Payment Details
-        </Text>
-
-        <Input
-          label="Payment Date *"
-          value={formData.paymentDate}
-          onChangeText={(value) => setFormData({ ...formData, paymentDate: value })}
-          placeholder="YYYY-MM-DD"
-        />
-
-        <YStack gap="$2">
-          <Text fontSize="$4" fontWeight="500" color="$color">
-            Payment Method *
-          </Text>
-          {errors.paymentMethod && (
-            <Text fontSize="$3" color="$red10">
-              {errors.paymentMethod}
-            </Text>
-          )}
-          <YStack gap="$2">
-            {PAYMENT_METHODS.map((method) => (
-              <Button
-                key={method}
-                variant={formData.paymentMethod === method ? 'primary' : 'outline'}
-                onPress={async () => {
-                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                  setFormData({ ...formData, paymentMethod: method })
-                }}
-              >
-                <Text
-                  color={
-                    formData.paymentMethod === method ? '#FFFFFF' : '$color'
-                  }
-                  fontWeight={formData.paymentMethod === method ? '600' : '400'}
-                >
-                  {method}
-                </Text>
-              </Button>
-            ))}
-          </YStack>
-        </YStack>
-
-        <Input
-          label="Transaction Reference *"
-          value={formData.transactionReference}
-          onChangeText={(value) =>
-            setFormData({ ...formData, transactionReference: value })
-          }
-          placeholder="e.g., TXN123456789"
-          error={!!errors.transactionReference}
-          errorText={errors.transactionReference}
-        />
-      </Card>
-
-      {/* Transaction Fees */}
-      <Card backgroundColor="$yellow2" borderColor="$yellow7">
-        <Text fontSize="$5" fontWeight="600" color="$yellow11" marginBottom="$3">
-          Transaction Fees (Optional)
-        </Text>
-
-        <Input
-          label="Transaction Fee Amount"
-          value={formData.transactionFee}
-          onChangeText={(value) =>
-            setFormData({ ...formData, transactionFee: value })
-          }
-          keyboardType="decimal-pad"
-          placeholder="0.00"
-        />
-
-        {parseFloat(formData.transactionFee) > 0 && (
-          <YStack gap="$2" marginTop="$2">
-            <Text fontSize="$4" fontWeight="500" color="$color">
-              Fee Type
-            </Text>
-            <YStack gap="$2">
-              {TRANSACTION_FEE_TYPES.map((feeType) => (
-                <Button
-                  key={feeType}
-                  variant={
-                    formData.transactionFeeType === feeType ? 'primary' : 'outline'
-                  }
-                  onPress={async () => {
-                    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                    setFormData({ ...formData, transactionFeeType: feeType })
-                  }}
-                  size="sm"
-                >
-                  <Text
-                    fontSize="$3"
-                    color={
-                      formData.transactionFeeType === feeType
-                        ? '#FFFFFF'
-                        : '$color'
-                    }
-                  >
-                    {feeType}
-                  </Text>
-                </Button>
-              ))}
-            </YStack>
-          </YStack>
-        )}
-
-        <YStack
-          padding="$3"
-          backgroundColor="$background"
-          borderRadius="$3"
-          marginTop="$3"
-        >
-          <Text fontSize="$4" fontWeight="600" color="$color" marginBottom="$2">
-            Payment Breakdown
-          </Text>
-
-          <XStack justifyContent="space-between" marginBottom="$1">
-            <Text fontSize="$3" color="$colorHover">
-              Voucher Amount:
-            </Text>
-            <Text fontSize="$3" fontWeight="500" color="$color">
-              {document.currency} {document.total.toFixed(2)}
-            </Text>
-          </XStack>
-
-          <XStack justifyContent="space-between" marginBottom="$1">
-            <Text fontSize="$3" color="$colorHover">
-              Transaction Fee:
-            </Text>
-            <Text fontSize="$3" fontWeight="500" color="$color">
-              {document.currency}{' '}
-              {(parseFloat(formData.transactionFee) || 0).toFixed(2)}
-            </Text>
-          </XStack>
-
-          <XStack
-            justifyContent="space-between"
-            paddingTop="$2"
-            borderTopWidth={1}
-            borderTopColor="$borderColor"
-          >
-            <Text fontSize="$4" fontWeight="700" color="$color">
-              Total Deducted:
-            </Text>
-            <Text fontSize="$4" fontWeight="700" color="$color">
-              {document.currency} {calculateTotalDeducted().toFixed(2)}
-            </Text>
-          </XStack>
-        </YStack>
-      </Card>
-
-      {/* Line Items Display */}
-      {document.items && document.items.length > 0 && (
-        <Card>
-          <Text fontSize="$5" fontWeight="600" color="$color" marginBottom="$3">
-            Payment Items
-          </Text>
-
-          {document.items.map((item, index) => (
-            <XStack
-              key={item.id}
-              justifyContent="space-between"
-              paddingVertical="$2"
-              borderBottomWidth={index < document.items.length - 1 ? 1 : 0}
-              borderBottomColor="$borderColor"
-            >
-              <YStack flex={1}>
-                <Text fontSize="$4" color="$color" marginBottom="$1">
-                  {item.description}
-                </Text>
-                <Text fontSize="$3" color="$colorHover">
-                  {item.quantity} × {document.currency} {item.unitPrice.toFixed(2)}
-                </Text>
-              </YStack>
-              <Text fontSize="$4" fontWeight="600" color="$color">
-                {document.currency} {item.amount.toFixed(2)}
+    <YStack flex={1}>
+      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+        <YStack padding="$5" gap="$4">
+          {/* Linked Voucher Info */}
+          <Card backgroundColor={indigoSoftColor} padding="$5" borderRadius={16} style={[styles.formCard, { borderWidth: 2, borderColor: indigoColor + '30' }]}>
+            <XStack alignItems="center" gap="$2" marginBottom="$4">
+              <View style={[styles.sectionIcon, { backgroundColor: theme.bgCard }]}>
+                <Link size={15} color={indigoColor} />
+              </View>
+              <Text fontSize={11} fontWeight="600" letterSpacing={1.2} textTransform="uppercase" color={theme.textMuted}>
+                Linked Payment Voucher
               </Text>
             </XStack>
-          ))}
-        </Card>
-      )}
 
-      {/* Confirmation */}
-      <Card>
-        <Text fontSize="$5" fontWeight="600" color="$color" marginBottom="$3">
-          Confirmation
-        </Text>
+            <YStack gap="$2">
+              <XStack justifyContent="space-between">
+                <Text fontSize={13} color={theme.textMuted}>Voucher Number:</Text>
+                <Text fontSize={13} fontWeight="600" color={indigoColor}>
+                  {document.linkedVoucherNumber || 'N/A'}
+                </Text>
+              </XStack>
 
-        <Input
-          label="Confirmed By *"
-          value={formData.confirmedBy}
-          onChangeText={(value) => setFormData({ ...formData, confirmedBy: value })}
-          placeholder="Name of person confirming payment"
-          error={!!errors.confirmedBy}
-          errorText={errors.confirmedBy}
-        />
-      </Card>
+              <XStack justifyContent="space-between">
+                <Text fontSize={13} color={theme.textMuted}>Payee:</Text>
+                <Text fontSize={13} fontWeight="600" color={theme.textPrimary}>
+                  {document.payeeName}
+                </Text>
+              </XStack>
 
-      {/* Notes */}
-      <Card>
-        <Input
-          label="Notes"
-          value={formData.notes}
-          onChangeText={(value) => setFormData({ ...formData, notes: value })}
-          multiline
-          numberOfLines={3}
-          placeholder="Additional notes..."
-        />
-      </Card>
+              <XStack justifyContent="space-between">
+                <Text fontSize={13} color={theme.textMuted}>Amount:</Text>
+                <Text fontSize={13} fontWeight="600" color={theme.textPrimary}>
+                  {document.currency} {document.total.toFixed(2)}
+                </Text>
+              </XStack>
+            </YStack>
+          </Card>
 
-      {/* Save Button */}
-      <Button
-        variant="primary"
-        size="lg"
-        onPress={handleSave}
-        disabled={isSaving}
-      >
-        <Text color="#FFFFFF" fontWeight="600">
-          {isSaving ? 'Saving...' : 'Save Changes'}
-        </Text>
-      </Button>
+          {/* Payment Details */}
+          <Card backgroundColor={theme.bgCard} padding="$5" borderRadius={16} style={styles.formCard}>
+            <SectionHeader title="Payment Details" theme={theme} />
+
+            <FormField label="Payment Date" required theme={theme}>
+              <Pressable
+                onPress={async () => {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                  setShowDatePicker(true)
+                }}
+                style={[styles.dateInput, { borderColor: theme.borderSubtle, backgroundColor: theme.bgCard }]}
+              >
+                <Text
+                  fontSize={14}
+                  fontWeight="500"
+                  color={formData.paymentDate ? theme.textPrimary : theme.textFaint}
+                >
+                  {formData.paymentDate ? formatDate(formData.paymentDate) : 'Select date'}
+                </Text>
+                <Calendar size={18} color={theme.textMuted} />
+              </Pressable>
+            </FormField>
+
+            {/* iOS Date Picker */}
+            {Platform.OS === 'ios' && showDatePicker && (
+              <Modal transparent animationType="fade" visible={showDatePicker} onRequestClose={() => setShowDatePicker(false)}>
+                <Pressable style={styles.datePickerOverlay} onPress={() => setShowDatePicker(false)}>
+                  <Pressable style={[styles.datePickerContainer, { backgroundColor: theme.bgCard }]}>
+                    <XStack justifyContent="space-between" alignItems="center" paddingHorizontal="$4" paddingVertical="$3" borderBottomWidth={1} borderBottomColor={theme.borderSubtle}>
+                      <Text fontSize={17} fontWeight="600" color={theme.textPrimary}>Payment Date</Text>
+                      <Pressable onPress={() => setShowDatePicker(false)} hitSlop={8}>
+                        <Text fontSize={17} fontWeight="600" color={theme.gold}>Done</Text>
+                      </Pressable>
+                    </XStack>
+                    <DateTimePicker value={new Date(formData.paymentDate || Date.now())} mode="date" display="spinner" onChange={handleDateChange} locale="en-GB" themeVariant="light" style={{ height: 200 }} />
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            )}
+
+            {/* Android Date Picker */}
+            {Platform.OS === 'android' && showDatePicker && (
+              <DateTimePicker value={new Date(formData.paymentDate || Date.now())} mode="date" display="default" onChange={handleDateChange} />
+            )}
+
+            <FormField label="Payment Method" required theme={theme}>
+              {errors.paymentMethod && (
+                <Text fontSize={12} color={theme.vermillion} marginBottom="$2">
+                  {errors.paymentMethod}
+                </Text>
+              )}
+              <YStack gap="$2">
+                {PAYMENT_METHODS.map((method) => (
+                  <Pressable
+                    key={method}
+                    onPress={async () => {
+                      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                      setFormData({ ...formData, paymentMethod: method })
+                    }}
+                    style={[
+                      styles.methodButton,
+                      { borderColor: formData.paymentMethod === method ? theme.gold : theme.borderSubtle },
+                      formData.paymentMethod === method && { backgroundColor: theme.goldSoft }
+                    ]}
+                  >
+                    <Text
+                      color={formData.paymentMethod === method ? theme.gold : theme.textSecondary}
+                      fontWeight={formData.paymentMethod === method ? '600' : '400'}
+                      fontSize={14}
+                    >
+                      {method}
+                    </Text>
+                  </Pressable>
+                ))}
+              </YStack>
+            </FormField>
+
+            <FormField label="Transaction Reference" required theme={theme}>
+              <Input
+                value={formData.transactionReference}
+                onChangeText={(value) => setFormData({ ...formData, transactionReference: value })}
+                placeholder="e.g., TXN123456789"
+                error={!!errors.transactionReference}
+                errorText={errors.transactionReference}
+              />
+            </FormField>
+          </Card>
+
+          {/* Transaction Fees */}
+          <Card backgroundColor={theme.vermillionSoft} padding="$5" borderRadius={16} style={[styles.formCard, { borderWidth: 1, borderColor: theme.vermillion + '30' }]}>
+            <SectionHeader title="Transaction Fees (Optional)" theme={theme} />
+
+            <FormField label="Transaction Fee Amount" theme={theme}>
+              <Input
+                value={formData.transactionFee}
+                onChangeText={(value) => setFormData({ ...formData, transactionFee: value })}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+              />
+            </FormField>
+
+            {parseFloat(formData.transactionFee) > 0 && (
+              <FormField label="Fee Type" theme={theme}>
+                <YStack gap="$2">
+                  {TRANSACTION_FEE_TYPES.map((feeType) => (
+                    <Pressable
+                      key={feeType}
+                      onPress={async () => {
+                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                        setFormData({ ...formData, transactionFeeType: feeType })
+                      }}
+                      style={[
+                        styles.methodButton,
+                        { borderColor: formData.transactionFeeType === feeType ? theme.vermillion : theme.borderSubtle },
+                        formData.transactionFeeType === feeType && { backgroundColor: theme.vermillionSoft }
+                      ]}
+                    >
+                      <Text
+                        color={formData.transactionFeeType === feeType ? theme.vermillion : theme.textSecondary}
+                        fontWeight={formData.transactionFeeType === feeType ? '600' : '400'}
+                        fontSize={13}
+                      >
+                        {feeType}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </YStack>
+              </FormField>
+            )}
+
+            <View style={[styles.breakdownBox, { backgroundColor: theme.bgCard }]}>
+              <Text fontSize={14} fontWeight="600" color={theme.textPrimary} marginBottom="$2">
+                Payment Breakdown
+              </Text>
+
+              <XStack justifyContent="space-between" marginBottom="$1">
+                <Text fontSize={13} color={theme.textMuted}>Voucher Amount:</Text>
+                <Text fontSize={13} fontWeight="500" color={theme.textPrimary}>
+                  {document.currency} {document.total.toFixed(2)}
+                </Text>
+              </XStack>
+
+              <XStack justifyContent="space-between" marginBottom="$1">
+                <Text fontSize={13} color={theme.textMuted}>Transaction Fee:</Text>
+                <Text fontSize={13} fontWeight="500" color={theme.vermillion}>
+                  {document.currency} {(parseFloat(formData.transactionFee) || 0).toFixed(2)}
+                </Text>
+              </XStack>
+
+              <View style={[styles.totalDivider, { borderTopColor: theme.borderMedium }]} />
+
+              <XStack justifyContent="space-between" alignItems="center">
+                <Text fontSize={15} fontWeight="700" color={theme.textPrimary}>Total Deducted:</Text>
+                <Text fontSize={16} fontWeight="700" color={theme.gold}>
+                  {document.currency} {calculateTotalDeducted().toFixed(2)}
+                </Text>
+              </XStack>
+            </View>
+          </Card>
+
+          {/* Line Items Display */}
+          {document.items && document.items.length > 0 && (
+            <Card backgroundColor={theme.bgCard} padding="$5" borderRadius={16} style={styles.formCard}>
+              <SectionHeader title="Payment Items" theme={theme} />
+
+              {document.items.map((item, index) => (
+                <XStack
+                  key={item.id}
+                  justifyContent="space-between"
+                  paddingVertical="$2"
+                  borderBottomWidth={index < document.items.length - 1 ? 1 : 0}
+                  borderBottomColor={theme.borderSubtle}
+                >
+                  <YStack flex={1}>
+                    <Text fontSize={14} color={theme.textPrimary} marginBottom={4}>
+                      {item.description}
+                    </Text>
+                    <Text fontSize={12} color={theme.textMuted}>
+                      {item.quantity} × {document.currency} {item.unitPrice.toFixed(2)}
+                    </Text>
+                  </YStack>
+                  <Text fontSize={14} fontWeight="600" color={theme.textPrimary}>
+                    {document.currency} {item.amount.toFixed(2)}
+                  </Text>
+                </XStack>
+              ))}
+            </Card>
+          )}
+
+          {/* Confirmation */}
+          <Card backgroundColor={theme.bgCard} padding="$5" borderRadius={16} style={styles.formCard}>
+            <SectionHeader title="Confirmation" theme={theme} />
+
+            <FormField label="Confirmed By" required theme={theme}>
+              <Input
+                value={formData.confirmedBy}
+                onChangeText={(value) => setFormData({ ...formData, confirmedBy: value })}
+                placeholder="Name of person confirming payment"
+                error={!!errors.confirmedBy}
+                errorText={errors.confirmedBy}
+              />
+            </FormField>
+          </Card>
+
+          {/* Notes */}
+          <Card backgroundColor={theme.bgCard} padding="$5" borderRadius={16} style={styles.formCard}>
+            <SectionHeader title="Notes" theme={theme} />
+            <Input
+              value={formData.notes}
+              onChangeText={(value) => setFormData({ ...formData, notes: value })}
+              multiline
+              numberOfLines={3}
+              placeholder="Additional notes..."
+            />
+          </Card>
+        </YStack>
+      </ScrollView>
+
+      {/* Action Buttons */}
+      <View style={[styles.actionBar, { backgroundColor: theme.bgCard, borderTopColor: theme.borderSubtle }]}>
+        <Pressable onPress={onCancel} style={[styles.cancelButton, { borderColor: theme.borderMedium }]}>
+          <Text color={theme.textSecondary} fontWeight="600" fontSize={14}>Cancel</Text>
+        </Pressable>
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving}
+          style={[styles.saveButton, { backgroundColor: theme.gold, opacity: isSaving ? 0.6 : 1 }]}
+        >
+          <Text color="#FFFFFF" fontWeight="600" fontSize={14}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Text>
+        </Pressable>
+      </View>
     </YStack>
   )
 }
+
+const styles = StyleSheet.create({
+  formCard: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionAccent: {
+    width: 3,
+    height: 14,
+    borderRadius: 2,
+  },
+  sectionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 10,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  datePickerContainer: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 16,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  methodButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 10,
+  },
+  breakdownBox: {
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  totalDivider: {
+    borderTopWidth: 1,
+    paddingTop: 12,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  actionBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+})

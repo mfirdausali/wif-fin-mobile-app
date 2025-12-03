@@ -10,6 +10,14 @@ import * as Sharing from 'expo-sharing'
 import Constants from 'expo-constants'
 import type { Booking, BookingCostItem } from '../../types'
 
+// Configuration for retry and timeout
+const PDF_CONFIG = {
+  timeout: 30000, // 30 seconds timeout
+  maxRetries: 3,
+  retryDelay: 1000, // 1 second initial delay
+  retryMultiplier: 2, // Exponential backoff multiplier
+}
+
 /**
  * Convert base64 string to Uint8Array for file writing
  */
@@ -22,11 +30,81 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes
 }
 
+/**
+ * Sleep for specified milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Fetch with timeout support using AbortController
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeout: number
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+    return response
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+/**
+ * Fetch with retry logic and exponential backoff
+ * Handles transient failures gracefully
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  config: typeof PDF_CONFIG
+): Promise<Response> {
+  let lastError: Error | null = null
+  let delay = config.retryDelay
+
+  for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
+    try {
+      console.log(`[Print PDF] Attempt ${attempt}/${config.maxRetries}`)
+      const response = await fetchWithTimeout(url, options, config.timeout)
+
+      if (response.status >= 500 && attempt < config.maxRetries) {
+        console.warn(`[Print PDF] Server error ${response.status}, retrying...`)
+        await sleep(delay)
+        delay *= config.retryMultiplier
+        continue
+      }
+
+      return response
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+      if (attempt < config.maxRetries) {
+        console.warn(`[Print PDF] Error on attempt ${attempt}, retrying...`)
+        await sleep(delay)
+        delay *= config.retryMultiplier
+      }
+    }
+  }
+
+  throw lastError || new Error('PDF request failed after all retries')
+}
+
 // PDF Service URL
 const PDF_SERVICE_URL =
   Constants.expoConfig?.extra?.pdfServiceUrl ||
   process.env.EXPO_PUBLIC_PDF_SERVICE_URL ||
   'https://pdf.wifjapan.com'
+
+// NOTE: Company info is fetched from Supabase by the PDF service
+// Do NOT send companyInfo from mobile - let server fetch from single source of truth
 
 export interface CompanyInfo {
   name: string
@@ -46,6 +124,14 @@ export interface BookingCardOptions {
   categories: string[]
   includePrices: boolean
   outputFormat: 'combined' | 'separate'
+}
+
+export interface BookingFormPrintOptions {
+  pricingDisplay: 'none' | 'internal' | 'b2b' | 'both'
+  includeNotes: boolean
+  includeEmptyCategories: boolean
+  showProfitMargin: boolean
+  showExchangeRate: boolean
 }
 
 // Web API format types (matches pdf.wifjapan.com expectations)
@@ -261,9 +347,11 @@ export class PdfService {
    */
   static async checkHealth(): Promise<boolean> {
     try {
-      const response = await fetch(`${PDF_SERVICE_URL}/health`, {
-        method: 'GET',
-      })
+      const response = await fetchWithTimeout(
+        `${PDF_SERVICE_URL}/health`,
+        { method: 'GET' },
+        5000 // 5 second timeout for health check
+      )
       return response.ok
     } catch {
       return false
@@ -276,7 +364,7 @@ export class PdfService {
   static async generateBookingCards(
     booking: Booking,
     options: BookingCardOptions,
-    companyInfo?: CompanyInfo,
+    _companyInfo?: CompanyInfo, // Ignored - server fetches from Supabase
     printerInfo?: PrinterInfo
   ): Promise<PDFResult | MultiplePDFResult> {
     try {
@@ -288,20 +376,35 @@ export class PdfService {
         (cat) => CATEGORY_KEY_MAP[cat] || cat
       )
 
-      const response = await fetch(`${PDF_SERVICE_URL}/api/pdf/booking-card`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Get device timezone
+      const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      // Prepare printer info with device date/time
+      const finalPrinterInfo = {
+        userName: printerInfo?.userName || 'Mobile User',
+        printDate: new Date().toISOString(),
+        timezone: deviceTimezone,
+      }
+
+      // NOTE: companyInfo is NOT sent - server will fetch from Supabase (single source of truth)
+      const response = await fetchWithRetry(
+        `${PDF_SERVICE_URL}/api/pdf/booking-card`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            booking: webBooking,
+            categories: apiCategories,
+            includePrices: options.includePrices,
+            outputFormat: options.outputFormat,
+            // companyInfo: undefined - let server fetch from Supabase
+            printerInfo: finalPrinterInfo,
+          }),
         },
-        body: JSON.stringify({
-          booking: webBooking,
-          categories: apiCategories,
-          includePrices: options.includePrices,
-          outputFormat: options.outputFormat,
-          companyInfo,
-          printerInfo,
-        }),
-      })
+        PDF_CONFIG
+      )
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Unknown error' }))
@@ -339,15 +442,101 @@ export class PdfService {
   }
 
   /**
+   * Generate and download booking form PDF
+   */
+  static async downloadBookingForm(
+    booking: Booking,
+    options: BookingFormPrintOptions,
+    _companyInfo?: CompanyInfo, // Ignored - server fetches from Supabase
+    printerInfo?: PrinterInfo
+  ): Promise<PDFResult> {
+    try {
+      // Transform booking to web format
+      const webBooking = transformBookingForAPI(booking)
+
+      // Get device timezone
+      const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      // Prepare printer info with device date/time
+      const finalPrinterInfo = {
+        userName: printerInfo?.userName || 'Mobile User',
+        printDate: new Date().toISOString(), // Device's current date/time
+        timezone: deviceTimezone,
+      }
+
+      // Prepare request body
+      // NOTE: companyInfo is NOT sent - server will fetch from Supabase (single source of truth)
+      const requestBody = {
+        booking: webBooking,
+        options: {
+          pricingDisplay: options.pricingDisplay,
+          includeNotes: options.includeNotes,
+          includeEmptyCategories: options.includeEmptyCategories,
+          showProfitMargin: options.showProfitMargin,
+          showExchangeRate: options.showExchangeRate,
+          paperSize: 'a4',
+          orientation: 'portrait',
+        },
+        // companyInfo: undefined - let server fetch from Supabase
+        printerInfo: finalPrinterInfo,
+      }
+
+      console.log('Requesting booking form PDF from:', `${PDF_SERVICE_URL}/api/pdf/booking-form`)
+
+      const response = await fetchWithRetry(
+        `${PDF_SERVICE_URL}/api/pdf/booking-form`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        },
+        PDF_CONFIG
+      )
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+        return {
+          success: false,
+          error: error.error || `HTTP ${response.status}`,
+        }
+      }
+
+      const contentType = response.headers.get('Content-Type')
+      console.log(`Booking form PDF response content-type: ${contentType}`)
+
+      if (contentType?.includes('application/pdf')) {
+        // Handle PDF response
+        console.log('Processing booking form PDF response')
+        return await this.handleSinglePDF(response, booking.bookingNumber, 'booking-form')
+      }
+
+      console.error('Unexpected response content-type:', contentType)
+      return {
+        success: false,
+        error: 'Unexpected response format',
+      }
+    } catch (error) {
+      console.error('Booking form PDF generation error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  }
+
+  /**
    * Handle single PDF response (combined output or single category)
    */
   private static async handleSinglePDF(
     response: Response,
-    bookingNumber: string
+    bookingNumber: string,
+    filePrefix: string = 'booking-card'
   ): Promise<PDFResult> {
     try {
       const blob = await response.blob()
-      const filename = `booking-card-${bookingNumber}.pdf`
+      const filename = `${filePrefix}-${bookingNumber}.pdf`
 
       // Convert blob to base64
       const reader = new FileReader()
@@ -442,6 +631,9 @@ export class PdfService {
         dialogTitle: 'Share Booking Card',
       })
 
+      // Clean up old PDFs after successful share
+      await this.cleanupTempFiles()
+
       return true
     } catch (error) {
       console.error('Share error:', error)
@@ -469,6 +661,9 @@ export class PdfService {
           dialogTitle: `Share ${file.filename}`,
         })
       }
+
+      // Clean up old PDFs after successful share
+      await this.cleanupTempFiles()
 
       return true
     } catch (error) {
